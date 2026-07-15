@@ -1,0 +1,44 @@
+{
+  "scripts": {
+    "start": "ts-node src/main.ts",
+    "start:dev": "ts-node --transpile-only src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "prisma": "prisma",
+    "prisma:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@nestjs-modules/mailer": "^2.3.7",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.1.28",
+    "@nestjs/swagger": "^11.4.5",
+    "@nestjs/throttler": "^6.5.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "argon2": "^0.44.0",
+    "bullmq": "^5.80.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "compression": "^1.8.1",
+    "dayjs": "^1.11.21",
+    "helmet": "^8.3.0",
+    "ioredis": "^5.11.1",
+    "multer": "^2.2.0",
+    "nest-winston": "^1.10.2",
+    "nodemailer": "^9.0.3",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "prisma": "^7.8.0",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^14.0.1",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@types/multer": "^2.2.0",
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
