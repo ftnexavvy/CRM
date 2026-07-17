@@ -11,6 +11,7 @@ async function bootstrap() {
         .setTitle("FT Nexavvy CRM API")
         .setDescription("API documentation for FT Nexavvy CRM")
         .setVersion("1.0")
+        .addBearerAuth()
         .build();
     swagger_1.SwaggerModule.setup("api", app, swagger_1.SwaggerModule.createDocument(app, swaggerConfig));
     const port = process.env.PORT ? Number(process.env.PORT) : 3000;

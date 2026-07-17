@@ -1,1 +1,6 @@
-// placeholder for jwt.config.ts
+export const jwtConfig = () => ({
+  jwt: {
+    accessTokenExpiresIn: "15m",
+    refreshTokenExpiresIn: "7d",
+  },
+});
