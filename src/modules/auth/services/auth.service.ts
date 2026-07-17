@@ -7,7 +7,7 @@ import { ChangePasswordDto, LoginDto, RegisterDto } from "../dto";
 import { AuthDataEntity, AuthUserEntity } from "../entities/auth-response.entity";
 import { AUTH_REPOSITORY, AuthUser, IAuthRepository } from "../interfaces/auth-repository.interface";
 
-interface JwtPayload { sub: string; email: string; roleId: string }
+interface JwtPayload { sub: string; email: string; roleId: string; companyId: string;}
 
 @Injectable()
 export class AuthService {
@@ -97,7 +97,7 @@ export class AuthService {
   }
 
   private async createSession(user: AuthUser): Promise<AuthDataEntity> {
-    const payload: JwtPayload = { sub: user.id, email: user.email, roleId: user.roleId };
+    const payload: JwtPayload = { sub: user.id, email: user.email, roleId: user.roleId, companyId: user.companyId };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, { expiresIn: "15m" }),
       this.jwtService.signAsync(payload, { secret: this.refreshSecret, expiresIn: "7d" }),

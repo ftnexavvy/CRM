@@ -4,7 +4,9 @@
     "start:dev": "ts-node --transpile-only src/main.ts",
     "build": "tsc -p tsconfig.json",
     "prisma": "prisma",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.7",
@@ -42,5 +44,4 @@
     "typescript": "^5.5.4"
   }
 }
-
 

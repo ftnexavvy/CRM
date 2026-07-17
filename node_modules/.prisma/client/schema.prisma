@@ -6,15 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  SALES
-  ACCOUNT_MANAGER
-  DESIGNER
-  SOCIAL_MEDIA_MANAGER
-}
-
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -49,6 +40,7 @@ model Company {
   updatedAt   DateTime      @updatedAt
 
   users User[]
+  roles Role[]
 
   @@map("companies")
 }
@@ -64,8 +56,10 @@ model User {
 
   profileImage String?
   designation  String?
+  department   String?
 
-  role   UserRole   @default(ADMIN)
+  roleId String
+  role   Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
   status UserStatus @default(ACTIVE)
 
   lastLogin    DateTime?
@@ -78,4 +72,46 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+model Role {
+  id           String           @id @default(cuid())
+  companyId    String
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  isSystemRole Boolean          @default(false)
+  users        User[]
+  permissions  RolePermission[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  module      String
+  action      String
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
 }
