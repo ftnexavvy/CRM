@@ -6,8 +6,7 @@ import { UserStatus } from "@prisma/client";
 import { ChangePasswordDto, LoginDto, RegisterDto } from "../dto";
 import { AuthDataEntity, AuthUserEntity } from "../entities/auth-response.entity";
 import { AUTH_REPOSITORY, AuthUser, IAuthRepository } from "../interfaces/auth-repository.interface";
-
-interface JwtPayload { sub: string; email: string; roleId: string; companyId: string;}
+import { JwtPayload } from "../interfaces/jwt-payload.interface";
 
 @Injectable()
 export class AuthService {
