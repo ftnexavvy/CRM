@@ -1,5 +1,5 @@
 {
-  "scripts": {
+   "scripts": {
     "start": "ts-node src/main.ts",
     "start:dev": "ts-node --transpile-only src/main.ts",
     "build": "tsc -p tsconfig.json",
