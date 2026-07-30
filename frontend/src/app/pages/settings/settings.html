@@ -1,0 +1,175 @@
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-title-area">
+      <h1 class="page-title">Settings</h1>
+      <p class="page-subtitle">Manage service catalog and configurations</p>
+    </div>
+  </div>
+
+  <section class="settings-section card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Workflow Automation</h2>
+        <p class="section-desc">Configure how service tasks are assigned when client workflows are created automatically.</p>
+      </div>
+      <button class="btn btn-primary" (click)="saveWorkflowSettings()" [disabled]="submitting()">Save Settings</button>
+    </div>
+
+    <div class="settings-row">
+      <div class="form-group">
+        <label>Assignment Strategy</label>
+        <select class="form-control" [(ngModel)]="assignmentStrategy">
+          <option value="LEAST_WORKLOAD">Least Workload</option>
+          <option value="ROUND_ROBIN">Round Robin</option>
+          <option value="MANUAL_OVERRIDE">Manual Override</option>
+        </select>
+      </div>
+      <p class="settings-note">New client workflows use the selected strategy. If a department has one employee, that employee is assigned automatically.</p>
+    </div>
+  </section>
+
+  <!-- Section: Service Catalog -->
+  <section class="settings-section card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Service Catalog</h2>
+        <p class="section-desc">Define services, departments, and task templates used during automatic workflow generation.</p>
+      </div>
+      <button class="btn btn-primary" (click)="openCreate()">+ Add Service</button>
+    </div>
+
+    @if (loading()) {
+      <div class="loader-wrap"><div class="spinner"></div></div>
+    } @else if (services().length === 0) {
+      <div class="empty-state">
+        <p>No services yet. Add services like "Social Media Management", "Graphics Design", etc.</p>
+        <button class="btn btn-primary" (click)="openCreate()">Add First Service</button>
+      </div>
+    } @else {
+      <div class="service-grid">
+        @for (svc of services(); track svc.id) {
+          <div class="service-card">
+            <div class="service-card-header">
+              <div class="service-info">
+                <div class="service-name">{{ svc.name }}</div>
+                <div class="service-type-badge">{{ getDepartmentName(svc.departmentId) }}</div>
+              </div>
+            </div>
+            @if (svc.description) {
+              <p class="service-desc">{{ svc.description }}</p>
+            }
+            <div class="service-owner">
+              <span class="owner-label">Fallback Owner</span>
+              <span [ngClass]="svc.ownerId ? 'owner-name' : 'owner-unassigned'">{{ getEmployeeName(svc.ownerId) }}</span>
+            </div>
+            <div class="template-list">
+              <span class="owner-label">Task Templates</span>
+              @if (svc.taskTemplates?.length) {
+                <ol>
+                  @for (template of svc.taskTemplates; track template) {
+                    <li>{{ template }}</li>
+                  }
+                </ol>
+              } @else {
+                <p>Default templates will be used.</p>
+              }
+            </div>
+            <div class="service-card-actions">
+              <button class="btn btn-sm btn-secondary" (click)="openEdit(svc)">Edit</button>
+              <button class="btn btn-sm btn-danger" (click)="deleteService(svc.id)">Delete</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</div>
+
+<!-- Create Service Modal -->
+<app-modal title="Add New Service" [visible]="showCreateModal" (close)="showCreateModal = false">
+  <form (ngSubmit)="onCreateService()">
+    <div class="form-group">
+      <label>Service Name *</label>
+      <input class="form-control" [(ngModel)]="formName" name="name" placeholder="e.g. Social Media Management" required />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea class="form-control" [(ngModel)]="formDescription" name="desc" rows="2" placeholder="Brief description of this service"></textarea>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Department</label>
+        <select class="form-control" [(ngModel)]="formDepartmentId" name="departmentId">
+          <option value="">Select Department</option>
+          @for (dept of departments(); track dept.id) {
+            <option [value]="dept.id">{{ dept.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fallback Owner</label>
+        <select class="form-control" [(ngModel)]="formOwnerId" name="ownerId">
+          <option value="">No fallback owner</option>
+          @for (employee of employees(); track employee.id) {
+            <option [value]="employee.id">{{ employee.firstName }} {{ employee.lastName || '' }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Task Templates</label>
+      <textarea class="form-control" [(ngModel)]="formTaskTemplates" name="taskTemplates" rows="7" placeholder="Monthly Strategy&#10;Content Planning&#10;Client Approval"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showCreateModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+        {{ submitting() ? 'Creating...' : 'Create Service' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Edit Service Modal -->
+<app-modal title="Edit Service" [visible]="showEditModal" (close)="showEditModal = false">
+  <form (ngSubmit)="onUpdateService()">
+    <div class="form-group">
+      <label>Service Name *</label>
+      <input class="form-control" [(ngModel)]="formName" name="name" placeholder="Service name" required />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea class="form-control" [(ngModel)]="formDescription" name="desc" rows="2"></textarea>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Department</label>
+        <select class="form-control" [(ngModel)]="formDepartmentId" name="editDepartmentId">
+          <option value="">Select Department</option>
+          @for (dept of departments(); track dept.id) {
+            <option [value]="dept.id">{{ dept.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fallback Owner</label>
+        <select class="form-control" [(ngModel)]="formOwnerId" name="editOwnerId">
+          <option value="">No fallback owner</option>
+          @for (employee of employees(); track employee.id) {
+            <option [value]="employee.id">{{ employee.firstName }} {{ employee.lastName || '' }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Task Templates</label>
+      <textarea class="form-control" [(ngModel)]="formTaskTemplates" name="editTaskTemplates" rows="7"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showEditModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+        {{ submitting() ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

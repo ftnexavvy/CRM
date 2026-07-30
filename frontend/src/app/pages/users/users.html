@@ -1,0 +1,228 @@
+<div class="employees-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Employees</h1>
+      <p class="page-subtitle">Manage workspace members, roles, designations, and account access</p>
+    </div>
+    @if (authService.hasPermission('User.Create')) {
+      <button class="btn btn-primary" (click)="showCreateModal = true">
+        + Add Employee
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loader-container">
+      <div class="spinner"></div>
+    </div>
+  } @else {
+    <div class="table-container card">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Designation</th>
+            <th>Department</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users(); track user.id) {
+            <tr>
+              <td class="bold-text">
+                <span class="user-avatar-initials">
+                  {{ user.firstName?.charAt(0) }}{{ user.lastName?.charAt(0) }}
+                </span>
+                {{ user.firstName }} {{ user.lastName }}
+              </td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.designation || 'Staff' }}</td>
+              <td>{{ user.department || 'N/A' }}</td>
+              <td>
+                <span class="role-tag">{{ getRoleName(user.roleId) }}</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="user.status | lowercase">
+                  {{ user.status }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                @if (authService.hasPermission('User.Update')) {
+                  <button class="btn btn-secondary btn-sm" (click)="openEditModal(user)" title="Edit profile">
+                    Edit
+                  </button>
+                  <button class="btn btn-secondary btn-sm" (click)="openStatusModal(user)" title="Change status">
+                    Status
+                  </button>
+                  <button class="btn btn-secondary btn-sm" (click)="openPasswordModal(user)" title="Reset password">
+                    Reset Pass
+                  </button>
+                }
+                @if (authService.hasPermission('User.Delete') && user.id !== authService.currentUser()?.id) {
+                  <button class="btn btn-danger btn-sm" (click)="deleteUser(user.id)" title="Deactivate account">
+                    Deactivate
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Modal: Add Employee -->
+<app-modal title="Invite / Add Employee" [visible]="showCreateModal" (close)="showCreateModal = false">
+  <form (ngSubmit)="onCreateSubmit()">
+    <div class="section-title">Personal Details</div>
+    
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="fName">First Name *</label>
+        <input type="text" id="fName" name="fName" [(ngModel)]="firstName" placeholder="e.g. John" required />
+      </div>
+      <div class="form-group">
+        <label for="lName">Last Name</label>
+        <input type="text" id="lName" name="lName" [(ngModel)]="lastName" placeholder="e.g. Doe" />
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="uEmail">Email Address *</label>
+        <input type="email" id="uEmail" name="uEmail" [(ngModel)]="email" placeholder="john.doe@company.com" required />
+      </div>
+      <div class="form-group">
+        <label for="uPhone">Phone Number</label>
+        <input type="text" id="uPhone" name="uPhone" [(ngModel)]="phone" placeholder="e.g. +919988776655" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="uPassword">Temporary Password *</label>
+      <input type="password" id="uPassword" name="uPassword" [(ngModel)]="password" placeholder="••••••••••••" required />
+      <span class="input-helper">Minimum 8 characters. Used for initial sign-in.</span>
+    </div>
+
+    <div class="section-title">Assignment & Access</div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="uRole">Security Role *</label>
+        <select id="uRole" name="uRole" [(ngModel)]="roleId" required>
+          <option value="">Select Role</option>
+          @for (role of roles(); track role.id) {
+            <option [value]="role.id">{{ role.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="uDept">Home Department</label>
+        <select id="uDept" name="uDept" [(ngModel)]="departmentId" (change)="onDepartmentChange($event)">
+          <option value="">Select Department</option>
+          @for (d of departments(); track d.id) {
+            <option [value]="d.id">{{ d.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="uDesignation">Designation / Job Title</label>
+      <input type="text" id="uDesignation" name="uDesignation" [(ngModel)]="designation" placeholder="e.g. Lead Designer" />
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showCreateModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">Add Employee</button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Modal: Edit Employee Profile -->
+<app-modal title="Edit Employee Profile" [visible]="showEditModal" (close)="showEditModal = false">
+  <form (ngSubmit)="onEditSubmit()">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="efName">First Name *</label>
+        <input type="text" id="efName" name="efName" [(ngModel)]="editFirstName" required />
+      </div>
+      <div class="form-group">
+        <label for="elName">Last Name</label>
+        <input type="text" id="elName" name="elName" [(ngModel)]="editLastName" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="eDesignation">Designation</label>
+      <input type="text" id="eDesignation" name="eDesignation" [(ngModel)]="editDesignation" />
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="eDept">Department</label>
+        <select id="eDept" name="eDept" [(ngModel)]="editDepartment">
+          <option value="">No Department</option>
+          @for (d of departments(); track d.id) {
+            <option [value]="d.name">{{ d.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="eRole">Security Role</label>
+        <select id="eRole" name="eRole" [(ngModel)]="editRoleId">
+          @for (role of roles(); track role.id) {
+            <option [value]="role.id">{{ role.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showEditModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">Save Changes</button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Modal: Modify Employee Status -->
+<app-modal title="Change Account Status" [visible]="showStatusModal" (close)="showStatusModal = false">
+  <form (ngSubmit)="onStatusSubmit()">
+    <div class="form-group">
+      <label for="uStatusSelect">Select Status</label>
+      <select id="uStatusSelect" name="uStatusSelect" [(ngModel)]="newStatus">
+        <option value="ACTIVE">ACTIVE</option>
+        <option value="INACTIVE">INACTIVE</option>
+        <option value="SUSPENDED">SUSPENDED</option>
+      </select>
+      <span class="input-helper">INACTIVE or SUSPENDED employees will be blocked from logging into the workspace.</span>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showStatusModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">Update Status</button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Modal: Reset Employee Password -->
+<app-modal title="Reset Employee Password" [visible]="showPasswordModal" (close)="showPasswordModal = false">
+  <form (ngSubmit)="onPasswordSubmit()">
+    <div class="form-group">
+      <label for="resetPass">New Password *</label>
+      <input type="password" id="resetPass" name="resetPass" [(ngModel)]="resetPasswordVal" placeholder="••••••••••••" required />
+      <span class="input-helper">Must be at least 8 characters. The employee's active refresh tokens will be invalidated immediately.</span>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showPasswordModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">Reset Password</button>
+    </div>
+  </form>
+</app-modal>

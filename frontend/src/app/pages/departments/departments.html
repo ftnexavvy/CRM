@@ -1,0 +1,106 @@
+<div class="departments-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Departments</h1>
+      <p class="page-subtitle">Manage company departments and workload centers</p>
+    </div>
+    @if (authService.hasPermission('Department.Create')) {
+      <button class="btn btn-primary" (click)="showCreateModal = true">
+        + Create Department
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loader-container">
+      <div class="spinner"></div>
+    </div>
+  } @else if (departments().length === 0) {
+    <div class="empty-state card">
+      <p>No departments registered yet. Click Create Department to get started.</p>
+    </div>
+  } @else {
+    <div class="table-container card">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Code</th>
+            <th>Status</th>
+            <th>Created Date</th>
+            @if (authService.hasPermission('Department.Update')) {
+              <th>Actions</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (dept of departments(); track dept.id) {
+            <tr>
+              <td class="bold-text">{{ dept.name }}</td>
+              <td><span class="code-badge">{{ dept.code }}</span></td>
+              <td>
+                <span class="badge" [ngClass]="dept.isActive ? 'active' : 'inactive'">
+                  {{ dept.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="text-muted">{{ dept.createdAt | date:'mediumDate' }}</td>
+              @if (authService.hasPermission('Department.Update')) {
+                <td>
+                  <button class="btn btn-secondary btn-sm" (click)="openEditModal(dept)">
+                    Edit
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Modal: Create Department -->
+<app-modal title="Create Department" [visible]="showCreateModal" (close)="showCreateModal = false">
+  <form (ngSubmit)="onCreateSubmit()">
+    <div class="form-group">
+      <label for="dName">Department Name *</label>
+      <input type="text" id="dName" name="dName" [(ngModel)]="deptName" placeholder="e.g. Social Media Marketing" required />
+    </div>
+
+    <div class="form-group">
+      <label for="dCode">Department Code *</label>
+      <input type="text" id="dCode" name="dCode" [(ngModel)]="deptCode" placeholder="e.g. SOCIAL_MEDIA" required />
+      <span class="input-helper">Must start with a capital letter, containing only A-Z, 0-9, and underscores (e.g., TECH_TEAM).</span>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showCreateModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">Create</button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Modal: Edit Department -->
+<app-modal title="Edit Department" [visible]="showEditModal" (close)="showEditModal = false">
+  <form (ngSubmit)="onEditSubmit()">
+    <div class="form-group">
+      <label for="eName">Department Name *</label>
+      <input type="text" id="eName" name="eName" [(ngModel)]="editDeptName" placeholder="e.g. Sales" required />
+    </div>
+
+    <div class="form-group">
+      <label for="eCode">Department Code *</label>
+      <input type="text" id="eCode" name="eCode" [(ngModel)]="editDeptCode" placeholder="e.g. SALES" required />
+    </div>
+
+    <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" id="eActive" name="eActive" [(ngModel)]="editDeptActive" style="width:auto; margin:0;" />
+      <label for="eActive" style="margin:0;">Active Department</label>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showEditModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">Save Changes</button>
+    </div>
+  </form>
+</app-modal>

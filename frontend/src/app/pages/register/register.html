@@ -1,0 +1,67 @@
+<div class="auth-wrapper">
+  <div class="auth-card card register-card">
+    <div class="auth-header">
+      <div class="logo-circle">▲</div>
+      <h1>Register Company</h1>
+      <p class="subtitle">Set up your company space and administrator profile</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
+      <div class="section-title">Administrator Details</div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="firstName">First Name *</label>
+          <input type="text" id="firstName" name="firstName" [(ngModel)]="firstName" placeholder="Ava" required />
+        </div>
+        <div class="form-group">
+          <label for="lastName">Last Name</label>
+          <input type="text" id="lastName" name="lastName" [(ngModel)]="lastName" placeholder="Shah" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Admin Email *</label>
+        <input type="email" id="email" name="email" [(ngModel)]="email" placeholder="admin@nexavvy.com" required />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password *</label>
+        <input type="password" id="password" name="password" [(ngModel)]="password" placeholder="••••••••••••" required />
+        <span class="input-helper">Min 8 chars, must contain A-Z, a-z, 0-9 and a symbol</span>
+      </div>
+
+      <div class="section-title">Company Info</div>
+
+      <div class="form-group">
+        <label for="companyName">Company Name *</label>
+        <input type="text" id="companyName" name="companyName" [(ngModel)]="companyName" placeholder="Nexavvy Digital" required />
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="companyCode">Company Code *</label>
+          <input type="text" id="companyCode" name="companyCode" [(ngModel)]="companyCode" placeholder="NEXAVVY" required />
+          <span class="input-helper">Alphanumeric, dashboard code</span>
+        </div>
+        <div class="form-group">
+          <label for="companyEmail">Company Email *</label>
+          <input type="email" id="companyEmail" name="companyEmail" [(ngModel)]="companyEmail" placeholder="hello@nexavvy.com" required />
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full mt-4" [disabled]="loading()">
+        @if (loading()) {
+          <div class="spinner spinner-sm" style="display:inline-block; margin-right:8px;"></div> Creating Workspace...
+        } @else {
+          Create Company Workspace
+        }
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <span>Already have an account?</span>
+      <a routerLink="/login">Sign In Instead</a>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,109 @@
+<div class="roles-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Roles & Permissions</h1>
+      <p class="page-subtitle">Configure security profiles, invite rights, and module-specific capability matrices</p>
+    </div>
+    @if (authService.hasPermission('Role.Create')) {
+      <button class="btn btn-primary" (click)="showCreateModal = true">
+        + Create Custom Role
+      </button>
+    }
+  </div>
+
+  <div class="roles-layout-grid">
+    <!-- Left Column: Roles list -->
+    <div class="roles-list-panel card">
+      <h3 class="card-title">Security Roles</h3>
+      <p class="section-desc">Select a security role to view and edit authorized privileges</p>
+
+      <div class="role-list-items">
+        @for (role of roles(); track role.id) {
+          <div class="role-list-item" [ngClass]="{ active: selectedRole()?.id === role.id }" (click)="selectRole(role)">
+            <div class="role-item-main">
+              <span class="role-item-name">{{ role.name }}</span>
+              @if (role.isSystemRole) {
+                <span class="badge badge-sm system-tag">System</span>
+              }
+            </div>
+            <div class="role-item-desc">{{ role.description || 'No description provided' }}</div>
+            
+            @if (authService.hasPermission('Role.Delete') && !role.isSystemRole) {
+              <button class="btn btn-danger btn-sm delete-role-btn" (click)="$event.stopPropagation(); deleteRole(role)">
+                Delete
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Right Column: Permission Matrix -->
+    <div class="permission-matrix-panel card">
+      @if (!selectedRole()) {
+        <div class="no-selection-matrix">
+          <p>Select a role from the left pane to adjust permissions.</p>
+        </div>
+      } @else {
+        <div class="matrix-header">
+          <div>
+            <h3 class="card-title">Authorized Matrix for: {{ selectedRole().name }}</h3>
+            <p class="section-desc">Manage module-level functionality access for users holding this role</p>
+          </div>
+          @if (authService.hasPermission('Role.Update') && !selectedRole().isSystemRole) {
+            <button class="btn btn-primary" (click)="onSavePermissions()" [disabled]="submitting()">
+              Save Permissions
+            </button>
+          } @else if (selectedRole().isSystemRole) {
+            <span class="badge system-badge-status">System Protected (Read-Only)</span>
+          }
+        </div>
+
+        <div class="modules-accordion">
+          @for (group of getModuleGroupedPermissions() | keyvalue; track group.key) {
+            <div class="module-group">
+              <div class="module-group-title">{{ group.key }} Module</div>
+              
+              <div class="permission-items-grid">
+                @for (perm of group.value; track perm.id) {
+                  <div class="permission-checkbox-item">
+                    <input 
+                      type="checkbox" 
+                      [id]="perm.id" 
+                      [checked]="isPermissionChecked(perm.id)"
+                      (change)="togglePermission(perm.id, $event)"
+                      [disabled]="selectedRole().isSystemRole || !authService.hasPermission('Role.Update')" />
+                    <label [for]="perm.id">
+                      <strong class="perm-action">{{ perm.action }}</strong>
+                      <span class="perm-desc">{{ perm.description || perm.key }}</span>
+                    </label>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Create Role -->
+<app-modal title="Create Custom Role" [visible]="showCreateModal" (close)="showCreateModal = false">
+  <form (ngSubmit)="onCreateSubmit()">
+    <div class="form-group">
+      <label for="rName">Role Name *</label>
+      <input type="text" id="rName" name="rName" [(ngModel)]="roleName" placeholder="e.g. Graphic Designer" required />
+    </div>
+
+    <div class="form-group">
+      <label for="rDesc">Role Description</label>
+      <textarea id="rDesc" name="rDesc" [(ngModel)]="roleDesc" rows="3" placeholder="Brief summary of duties..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showCreateModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">Create Role</button>
+    </div>
+  </form>
+</app-modal>

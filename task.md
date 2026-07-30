@@ -1,0 +1,29 @@
+# CRM Angular Frontend Tasks
+
+- [x] Initialize Angular Project
+  - [x] Run `ng new` command to create `frontend` folder
+  - [x] Set up `proxy.conf.json` for backend API proxying
+  - [x] Configure `angular.json` or proxy configurations to run cleanly
+- [x] Implement Core Services
+  - [x] Auth Service & Token Interceptor
+  - [x] User/Employee Service
+  - [x] Department Service
+  - [x] Role & Permission Service
+  - [x] Workflow & Task Service
+- [x] Create Global Components & Layout
+  - [x] Sidebar & Navigation
+  - [x] Header & User Profile Info
+  - [x] Toast Service & Alert Banner Component
+  - [x] Theme configuration (Dark-mode CSS variables)
+- [x] Build Authentication Pages
+  - [x] Login View
+  - [x] Register (Company + Admin) View
+- [x] Build Main Pages
+  - [x] Dashboard Page
+  - [x] Workflows & Timeline Page
+  - [x] Departments Page
+  - [x] Employees/Users Page
+  - [x] Roles & Permissions Page
+- [x] Verify & Build
+  - [x] Verify UI flows
+  - [x] Run production build `npm run build`

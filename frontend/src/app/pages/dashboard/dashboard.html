@@ -1,0 +1,161 @@
+<div class="dashboard-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">CRM Dashboard</h1>
+      <p class="page-subtitle">Welcome back, {{ authService.currentUser()?.firstName }}. Here is a summary of your workspace workloads.</p>
+    </div>
+    @if (authService.hasPermission('Workflow.Create')) {
+      <a routerLink="/workflows" class="btn btn-primary">
+        <span>+</span> Start Workflow
+      </a>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loader-container">
+      <div class="spinner"></div>
+    </div>
+  } @else {
+    <!-- Stats Cards Grid -->
+    <div class="stats-grid">
+      <div class="card stat-card total">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-info">
+          <span class="stat-label">Active Workflows</span>
+          <span class="stat-value">{{ totalWorkflows() }}</span>
+        </div>
+      </div>
+
+      <div class="card stat-card progress">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-info">
+          <span class="stat-label">In Progress</span>
+          <span class="stat-value">{{ inProgressCount() }}</span>
+        </div>
+      </div>
+
+      <div class="card stat-card review">
+        <div class="stat-icon">🛡</div>
+        <div class="stat-info">
+          <span class="stat-label">Pending Review</span>
+          <span class="stat-value">{{ reviewCount() }}</span>
+        </div>
+      </div>
+
+      <div class="card stat-card completed">
+        <div class="stat-icon">✓</div>
+        <div class="stat-info">
+          <span class="stat-label">Completed</span>
+          <span class="stat-value">{{ completedCount() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-sections">
+      <!-- Left Column: Work queue -->
+      <div class="queue-section card">
+        <h3 class="card-title">My Work Queue</h3>
+        <p class="section-desc">Workflows currently assigned to you that require attention</p>
+        
+        @if (myQueue().length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon">✓</div>
+            <p>Your queue is clear! No active assignments.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Assigned Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of myQueue(); track item.id) {
+                  <tr>
+                    <td>
+                      <span class="subject-type">{{ item.workflow.subjectType }}</span>
+                      <span class="subject-id">#{{ item.workflow.subjectId }}</span>
+                    </td>
+                    <td class="bold-text">{{ item.workflow.title }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="item.workflow.status | lowercase">{{ item.workflow.status | formatEnum }}</span>
+                    </td>
+                    <td class="text-muted">{{ item.assignedAt | date:'mediumDate' }}</td>
+                    <td>
+                      <a [routerLink]="['/workflows']" [queryParams]="{ id: item.workflowId }" class="btn btn-secondary btn-icon" title="View details">
+                        ➔
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <!-- Right Column: Department distribution -->
+      <div class="dept-section card">
+        <h3 class="card-title">Department Workloads</h3>
+        <p class="section-desc">Distribution of active workflows across departments</p>
+
+        @if (departmentWorkloads().length === 0) {
+          <div class="empty-state">
+            <p>No active department assignments.</p>
+          </div>
+        } @else {
+          <div class="workload-list">
+            @for (dept of departmentWorkloads(); track dept.departmentId) {
+              <div class="workload-item">
+                <div class="workload-header">
+                  <span class="dept-name">{{ dept.departmentName }}</span>
+                  <span class="workload-count">{{ dept.count }} workflow(s)</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar" [style.width.%]="(totalWorkflows() > 0 ? (dept.count / totalWorkflows()) * 100 : 0)"></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Bottom Section: Live Activity Logs -->
+    <div class="activity-feed-section card mt-4">
+      <div class="feed-header">
+        <h3 class="card-title">Live Activity Log</h3>
+        <p class="section-desc">Real-time actions and audit records across the system</p>
+      </div>
+
+      <div class="activity-feed-body">
+        @if (activities().length === 0) {
+          <div class="empty-state">
+            <p>No activity logs recorded yet.</p>
+          </div>
+        } @else {
+          <div class="activity-timeline">
+            @for (act of activities(); track act.id) {
+              <div class="timeline-item">
+                <div class="timeline-icon">
+                  {{ getActivityIcon(act.action) }}
+                </div>
+                <div class="timeline-content">
+                  <div class="timeline-desc">
+                    <strong class="actor-name">{{ act.user?.firstName }} {{ act.user?.lastName || '' }}</strong> {{ act.details }}
+                  </div>
+                  <div class="timeline-time">{{ act.createdAt | date:'medium' }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

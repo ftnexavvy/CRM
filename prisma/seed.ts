@@ -12,6 +12,7 @@ const permissions = [
   ["Department", "Create", "Create departments"], ["Department", "Read", "View departments"], ["Department", "Update", "Update departments"],
   ["Workflow", "Create", "Create workflows"], ["Workflow", "Read", "View workflows"], ["Workflow", "Assign", "Assign work"], ["Workflow", "Transfer", "Transfer work"],
   ["Workflow", "Accept", "Accept work"], ["Workflow", "Reject", "Reject work"], ["Workflow", "Complete", "Complete work"], ["Workflow", "Approve", "Approve workflows"],
+  ["Workflow", "Delete", "Delete workflows"],
   ["Workflow", "Dashboard.Read", "View workflow dashboards"], ["Task", "Generate", "Generate workflow tasks"], ["Task", "Assign", "Assign generated tasks"], ["Task", "Comment", "Comment on tasks"], ["Task", "Attach", "Attach files to tasks"],
 ];
 async function main() {

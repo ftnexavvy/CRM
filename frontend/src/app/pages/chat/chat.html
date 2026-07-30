@@ -1,0 +1,112 @@
+<div class="chat-container">
+  <!-- Left Side: Chat Info Card -->
+  <div class="chat-info-sidebar card">
+    <div class="sidebar-header">
+      <div class="live-status">
+        <span class="status-pulse"></span>
+        <span class="status-text">Company Chatroom</span>
+      </div>
+    </div>
+    
+    <div class="sidebar-body">
+      <h3>Welcome to live collaboration!</h3>
+      <p>This is a shared space for all members of <strong>{{ authService.currentUser()?.company?.companyName }}</strong>.</p>
+      
+      <div class="info-metric mt-4">
+        <div class="metric-label">Logged in as</div>
+        <div class="metric-value">{{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</div>
+        <div class="metric-sub">{{ authService.currentUser()?.role }}</div>
+      </div>
+
+      <div class="chat-guidelines mt-4">
+        <h4>Guidelines</h4>
+        <ul>
+          <li>Discuss active workflows and updates</li>
+          <li>Collaborate in real-time</li>
+          <li>Keep interactions professional</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Chat Window -->
+  <div class="chat-window card">
+    <!-- Chat Header -->
+    <div class="chat-header">
+      <div class="chat-title-group">
+        <span class="chat-icon">💬</span>
+        <div>
+          <h2>General Channel</h2>
+          <p class="chat-subtitle">All members channel</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="chat-messages-container" #scrollContainer>
+      @if (loading()) {
+        <div class="loader-container">
+          <div class="spinner"></div>
+          <p>Loading messages...</p>
+        </div>
+      } @else if (messages().length === 0) {
+        <div class="empty-chat-state">
+          <div class="chat-empty-icon">👋</div>
+          <h3>No messages yet</h3>
+          <p>Be the first to say hello to the team!</p>
+        </div>
+      } @else {
+        <div class="messages-list">
+          @for (msg of messages(); track msg.id) {
+            <div class="message-group" [ngClass]="{ 'my-message-group': isMyMessage(msg) }">
+              <!-- Sender Avatar for other members -->
+              @if (!isMyMessage(msg)) {
+                <div class="sender-avatar" title="{{ getSenderName(msg) }}">
+                  {{ msg.sender.firstName.charAt(0) }}{{ msg.sender.lastName?.charAt(0) || '' }}
+                </div>
+              }
+
+              <div class="message-content-wrapper">
+                <!-- Sender metadata -->
+                @if (!isMyMessage(msg)) {
+                  <div class="sender-meta">
+                    <span class="sender-name">{{ getSenderName(msg) }}</span>
+                    <span class="sender-role-badge">{{ msg.sender.designation || 'Staff' }}</span>
+                  </div>
+                }
+
+                <!-- Message bubble -->
+                <div class="message-bubble" [ngClass]="{ 'my-bubble': isMyMessage(msg) }">
+                  <p class="message-text">{{ msg.content }}</p>
+                  <span class="message-time">{{ msg.createdAt | date:'shortTime' }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Message Input Bar -->
+    <div class="chat-input-bar">
+      <form (ngSubmit)="send()" class="input-form">
+        <textarea
+          [(ngModel)]="newMessage"
+          name="messageText"
+          placeholder="Type your message here... (Press Enter to send)"
+          rows="1"
+          (keydown.enter)="$event.preventDefault(); send()"
+          required
+          [disabled]="sending()"
+        ></textarea>
+        <button type="submit" class="btn btn-primary send-btn" [disabled]="!newMessage.trim() || sending()">
+          @if (sending()) {
+            <span>...</span>
+          } @else {
+            <span class="send-icon">➤</span>
+          }
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

@@ -14,6 +14,12 @@ const company_module_1 = require("./modules/company/company.module");
 const auth_module_1 = require("./modules/auth/auth.module");
 const user_module_1 = require("./modules/user/user.module");
 const workflow_module_1 = require("./modules/workflow/workflow.module");
+const chat_module_1 = require("./modules/chat/chat.module");
+const lead_module_1 = require("./modules/leads/lead.module");
+const client_module_1 = require("./modules/clients/client.module");
+const activity_module_1 = require("./modules/activity/activity.module");
+const notification_module_1 = require("./modules/notifications/notification.module");
+const service_catalog_module_1 = require("./modules/services/service-catalog.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,6 +35,12 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             user_module_1.UserModule,
             workflow_module_1.WorkflowModule,
+            chat_module_1.ChatModule,
+            lead_module_1.LeadModule,
+            client_module_1.ClientModule,
+            activity_module_1.ActivityModule,
+            notification_module_1.NotificationModule,
+            service_catalog_module_1.ServiceCatalogModule,
         ],
     })
 ], AppModule);

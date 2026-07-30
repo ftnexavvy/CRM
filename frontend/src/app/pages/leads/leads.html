@@ -1,0 +1,362 @@
+<div class="leads-page-wrapper">
+  <!-- Leads Dashboard Header Metrics -->
+  <div class="dashboard-metrics-grid">
+    <div class="metric-card card">
+      <span class="metric-icon">📣</span>
+      <div class="metric-data">
+        <span class="label">Total Leads</span>
+        <h3 class="value">{{ metrics().total }}</h3>
+      </div>
+    </div>
+    
+    <div class="metric-card card">
+      <span class="metric-icon bg-info">🆕</span>
+      <div class="metric-data">
+        <span class="label">New Leads</span>
+        <h3 class="value text-info">{{ metrics().newLeads }}</h3>
+      </div>
+    </div>
+
+    <div class="metric-card card">
+      <span class="metric-icon bg-success">🏆</span>
+      <div class="metric-data">
+        <span class="label">Won Leads</span>
+        <h3 class="value text-success">{{ metrics().wonLeads }}</h3>
+      </div>
+    </div>
+
+    <div class="metric-card card">
+      <span class="metric-icon bg-accent">📈</span>
+      <div class="metric-data">
+        <span class="label">Conversion Rate</span>
+        <h3 class="value text-accent">{{ metrics().conversionRate }}%</h3>
+      </div>
+    </div>
+
+    <div class="metric-card card">
+      <span class="metric-icon bg-warning">💰</span>
+      <div class="metric-data">
+        <span class="label">Pipeline Value</span>
+        <h3 class="value text-warning">${{ metrics().potentialValue | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selected Lead Details Panel (Visible on top of the list when open) -->
+  @if (selectedLead()) {
+    <div class="selected-lead-details-card card mb-4">
+      <div class="details-card-header">
+        <div>
+          <span class="lead-tag">LEAD PROFILE</span>
+          <h2 class="details-lead-name">{{ selectedLead().name }}</h2>
+          <span class="lead-time">Added {{ selectedLead().createdAt | date:'mediumDate' }}</span>
+        </div>
+        <div class="details-header-actions">
+          <span class="badge badge-lg mr-3" [ngClass]="selectedLead().status | lowercase">
+            {{ selectedLead().status | formatEnum }}
+          </span>
+          <button class="btn btn-secondary btn-icon" (click)="selectedLead.set(null)" title="Close Details">×</button>
+        </div>
+      </div>
+
+      <div class="details-card-grid">
+        <!-- Left Sub-column: Status/Assignee -->
+        <div class="details-control-block">
+          <div class="form-group">
+            <label for="assignTo">Assign Lead To</label>
+            <select id="assignTo" [ngModel]="selectedLead().assignedToId" (ngModelChange)="assignLead($event)">
+              <option value="">Unassigned</option>
+              @for (emp of employees(); track emp.id) {
+                <option [value]="emp.id">{{ emp.firstName }} {{ emp.lastName || '' }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="leadStatus">Lead Status</label>
+            <select id="leadStatus" [ngModel]="selectedLead().status" (ngModelChange)="updateStatus($event)" [disabled]="!canEditStatus()">
+              <option value="NEW">NEW</option>
+              <option value="CONTACTED">CONTACTED</option>
+              <option value="QUALIFIED">QUALIFIED</option>
+              <option value="PROPOSAL_SENT">PROPOSAL SENT</option>
+              <option value="NEGOTIATION">NEGOTIATION</option>
+              <option value="WON">WON</option>
+              <option value="LOST">LOST</option>
+            </select>
+            @if (!canEditStatus()) {
+              <span class="permission-notice">Only the assignee or admins can update status.</span>
+            }
+          </div>
+        </div>
+
+        <!-- Middle Sub-column: Contact Info -->
+        <div class="details-info-block">
+          <div class="info-row">
+            <span>Email:</span>
+            <strong>{{ selectedLead().email || 'Not Provided' }}</strong>
+          </div>
+          <div class="info-row">
+            <span>Phone:</span>
+            <strong>{{ selectedLead().phone || 'Not Provided' }}</strong>
+          </div>
+          <div class="info-row">
+            <span>Value:</span>
+            <strong>${{ (selectedLead().value | number:'1.2-2') || '0.00' }}</strong>
+          </div>
+          <div class="info-row">
+            <span>Source:</span>
+            <strong>{{ selectedLead().source || 'Direct' }}</strong>
+          </div>
+        </div>
+
+        <!-- Right Sub-column: AI Recommendations & Notes -->
+        <div class="details-text-block">
+          @if (selectedLead().aiRecommendation) {
+            <div class="ai-box mb-3">
+              <span class="ai-sparkle">✨ AI Recommendation</span>
+              <p>{{ selectedLead().aiRecommendation }}</p>
+            </div>
+          }
+          <div class="notes-box">
+            <span class="label">Internal Notes</span>
+            <p>{{ selectedLead().notes || 'No notes added yet.' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Actions (Convert or Delete) -->
+      <div class="details-card-footer">
+        @if (selectedLead().status === 'WON') {
+          <div class="convert-banner">
+            <span>🎉 Lead has been won! Ready to convert?</span>
+            <button class="btn btn-success btn-sm ml-3" (click)="convertToClient()" [disabled]="submitting()">
+              @if (submitting()) { Converting... } @else { Convert to Client }
+            </button>
+          </div>
+        }
+        
+        <div class="flex-spacer"></div>
+
+        @if (authService.currentUser()?.role?.name === 'Administrator' || authService.currentUser()?.role === 'Administrator') {
+          <button class="btn btn-danger btn-sm" (click)="deleteLead(selectedLead().id)">
+            Delete Lead
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Filters & Action Bar -->
+  <div class="leads-action-bar card">
+    <div class="filters-group">
+      <div class="form-group filter-select">
+        <label for="statusFilter">Filter by Status</label>
+        <select id="statusFilter" [(ngModel)]="filterStatus" (change)="onFilterChange()">
+          <option value="">All Statuses</option>
+          <option value="NEW">NEW</option>
+          <option value="CONTACTED">CONTACTED</option>
+          <option value="QUALIFIED">QUALIFIED</option>
+          <option value="PROPOSAL_SENT">PROPOSAL SENT</option>
+          <option value="NEGOTIATION">NEGOTIATION</option>
+          <option value="WON">WON</option>
+          <option value="LOST">LOST</option>
+        </select>
+      </div>
+    </div>
+    
+    <button class="btn btn-primary" (click)="showCreateModal = true">
+      + New Lead
+    </button>
+  </div>
+
+  <!-- Bottom: Leads Table directory (spanning 100% width) -->
+  <div class="leads-list-card card">
+    <h2 class="card-title">Leads Directory</h2>
+    
+    @if (loadingLeads()) {
+      <div class="loader-container">
+        <div class="spinner"></div>
+      </div>
+    } @else if (leads().length === 0) {
+      <div class="empty-state">
+        <p>No leads found matching your criteria.</p>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Lead</th>
+              <th>Status</th>
+              <th>Score</th>
+              <th>Intent</th>
+              <th>Source</th>
+              <th>Opportunity</th>
+              <th>Assigned</th>
+              <th>Next Action</th>
+              <th>AI Recommendation</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (lead of paginatedLeads(); track lead.id; let idx = $index) {
+              <tr [ngClass]="{ active: selectedLead()?.id === lead.id }" (click)="selectLead(lead)">
+                <td class="bold-text text-muted">{{ (currentPage() - 1) * pageSize() + idx + 1 }}</td>
+                <td>
+                  <div class="lead-info-cell">
+                    <span class="lead-name bold-text">{{ lead.name }}</span>
+                    <span class="lead-subtitle">{{ lead.subtitle || 'Prospect Manager' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="lead.status | lowercase">
+                    {{ lead.status | formatEnum }}
+                  </span>
+                </td>
+                <td>
+                  <span class="score-indicator" [ngClass]="{'high-score': (lead.score || 70) >= 80, 'low-score': (lead.score || 70) < 60}">
+                    @if ((lead.score || 70) >= 75) {
+                      <span class="arrow-up">↑</span>
+                    } @else {
+                      <span class="arrow-down">↓</span>
+                    }
+                    <span class="score-val">{{ lead.score || 70 }}</span>
+                  </span>
+                </td>
+                <td>
+                  <div class="intent-cell">
+                    <span class="intent-dot" [ngClass]="(lead.intent || 'Medium') | lowercase"></span>
+                    <span class="intent-label">{{ lead.intent || 'Medium' }}</span>
+                  </div>
+                </td>
+                <td>{{ lead.source || 'Search' }}</td>
+                <td class="bold-text">
+                  @if (lead.value) {
+                    ${{ lead.value >= 1000 ? (lead.value / 1000 | number:'1.0-0') + 'K' : lead.value }}
+                  } @else {
+                    $0
+                  }
+                </td>
+                <td>
+                  <div class="assigned-cell">
+                    <div class="mini-avatar">
+                      {{ getEmployeeInitials(lead.assignedToId) }}
+                    </div>
+                    <span class="assignee-name">{{ getEmployeeName(lead.assignedToId) }}</span>
+                  </div>
+                </td>
+                <td>{{ lead.nextAction || 'Schedule Call' }}</td>
+                <td class="ai-recommendation-cell">
+                  <span class="ai-text">{{ lead.aiRecommendation || 'Potential profile' }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="pagination-footer">
+        <div class="pagination-info">
+          <span>Show</span>
+          <select class="pageSize-select" [ngModel]="pageSize()" (ngModelChange)="pageSize.set($event); onPageSizeChange()">
+            <option [value]="5">5</option>
+            <option [value]="10">10</option>
+            <option [value]="20">20</option>
+            <option [value]="50">50</option>
+          </select>
+          <span>from {{ leads().length }} data</span>
+        </div>
+
+        <div class="pagination-controls">
+          <button class="btn btn-secondary btn-sm" [disabled]="currentPage() === 1" (click)="prevPage()">‹</button>
+          @for (p of getPageNumbers(); track p) {
+            <button class="btn btn-sm page-num-btn" [ngClass]="{ 'btn-primary': currentPage() === p, 'btn-secondary': currentPage() !== p }" (click)="setPage(p)">
+              {{ p }}
+            </button>
+          }
+          <button class="btn btn-secondary btn-sm" [disabled]="currentPage() === totalPages()" (click)="nextPage()">›</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal: Create New Lead -->
+<app-modal title="Create New Lead" [visible]="showCreateModal" (close)="showCreateModal = false">
+  <form (ngSubmit)="onCreateLead()">
+    <div class="form-group">
+      <label for="name">Lead Name / Contact Person *</label>
+      <input type="text" id="name" name="name" [(ngModel)]="newName" placeholder="e.g. John Doe" required />
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="subtitle">Subtitle / Designation</label>
+        <input type="text" id="subtitle" name="subtitle" [(ngModel)]="newSubtitle" placeholder="e.g. Growth Manager @ NovaTech" />
+      </div>
+
+      <div class="form-group">
+        <label for="intent">Intent level</label>
+        <select id="intent" name="intent" [(ngModel)]="newIntent">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" [(ngModel)]="newEmail" placeholder="e.g. john@example.com" />
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="text" id="phone" name="phone" [(ngModel)]="newPhone" placeholder="e.g. +1234567890" />
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="source">Lead Source</label>
+        <input type="text" id="source" name="source" [(ngModel)]="newSource" placeholder="e.g. LinkedIn Ads, Google Ads" />
+      </div>
+
+      <div class="form-group">
+        <label for="val">Potential Value ($)</label>
+        <input type="number" id="val" name="val" [(ngModel)]="newValue" min="0" />
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="score">Lead Score (0-100)</label>
+        <input type="number" id="score" name="score" [(ngModel)]="newScore" min="0" max="100" />
+      </div>
+
+      <div class="form-group">
+        <label for="nextAction">Next Action</label>
+        <input type="text" id="nextAction" name="nextAction" [(ngModel)]="newNextAction" placeholder="e.g. Schedule Pricing Call" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="aiRecommendation">AI Recommendation</label>
+      <input type="text" id="aiRecommendation" name="aiRecommendation" [(ngModel)]="newAiRecommendation" placeholder="e.g. High conversion probability" />
+    </div>
+
+    <div class="form-group">
+      <label for="notes">Notes</label>
+      <textarea id="notes" name="notes" [(ngModel)]="newNotes" rows="3" placeholder="Brief requirements summary..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showCreateModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+        @if (submitting()) { Creating... } @else { Create Lead }
+      </button>
+    </div>
+  </form>
+</app-modal>

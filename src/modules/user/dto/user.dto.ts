@@ -11,6 +11,7 @@ export class CreateUserDto {
   @ApiProperty() @IsString() roleId!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() designation?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() department?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() departmentId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUrl() profileImage?: string;
 }
 export class UpdateUserDto extends PartialType(CreateUserDto) {}

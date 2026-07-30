@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { TaskType } from "@prisma/client";
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsArray, IsEnum, IsInt, IsOptional, IsString, Length, Max, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsArray, IsDateString, IsEnum, IsInt, IsOptional, IsString, Length, Max, Min, ValidateNested } from "class-validator";
 
 export class CreateWorkflowDto {
   @ApiProperty({ example: "LEAD" }) @IsString() @Length(1, 50) subjectType!: string;
@@ -36,4 +36,15 @@ export class CreateTaskAttachmentDto {
   @ApiProperty() @IsString() @Length(1, 255) fileName!: string;
   @ApiProperty() @IsString() @Length(1, 2000) fileUrl!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @Length(1, 120) mimeType?: string;
+}
+export class CreateCustomTaskDto {
+  @ApiProperty({ example: "Brochure Design" }) @IsString() @Length(1, 180) title!: string;
+  @ApiPropertyOptional({ enum: TaskType, default: TaskType.GENERIC }) @IsOptional() @IsEnum(TaskType) type?: TaskType;
+  @ApiProperty() @IsString() @Length(1, 191) departmentId!: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @Length(1, 191) assignedToId?: string;
+  @ApiPropertyOptional({ example: "HIGH" }) @IsOptional() @IsString() @Length(1, 40) priority?: string;
+  @ApiPropertyOptional() @IsOptional() @IsDateString() dueDate?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @Length(1, 5000) description?: string;
+  @ApiPropertyOptional({ example: "Ad-hoc Client Request" }) @IsOptional() @IsString() @Length(1, 150) serviceName?: string;
+  @ApiPropertyOptional({ type: [CreateTaskAttachmentDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => CreateTaskAttachmentDto) attachments?: CreateTaskAttachmentDto[];
 }

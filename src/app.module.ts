@@ -5,6 +5,12 @@ import { CompanyModule } from "./modules/company/company.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UserModule } from "./modules/user/user.module";
 import { WorkflowModule } from "./modules/workflow/workflow.module";
+import { ChatModule } from "./modules/chat/chat.module";
+import { LeadModule } from "./modules/leads/lead.module";
+import { ClientModule } from "./modules/clients/client.module";
+import { ActivityModule } from "./modules/activity/activity.module";
+import { NotificationModule } from "./modules/notifications/notification.module";
+import { ServiceCatalogModule } from "./modules/services/service-catalog.module";
 
 @Module({
   imports: [
@@ -17,6 +23,13 @@ import { WorkflowModule } from "./modules/workflow/workflow.module";
     AuthModule,
     UserModule,
     WorkflowModule,
+    ChatModule,
+    LeadModule,
+    ClientModule,
+    ActivityModule,
+    NotificationModule,
+    ServiceCatalogModule,
   ],
 })
 export class AppModule {}
+
