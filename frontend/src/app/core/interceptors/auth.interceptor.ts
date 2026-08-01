@@ -11,7 +11,15 @@ export const authInterceptor: HttpInterceptorFn = (
   const authService = inject(AuthService);
   const token = authService.accessToken;
 
-  let authReq = req;
+  // Prepend live API URL if in production
+  let url = req.url;
+  if (url.startsWith('/api/') && typeof window !== 'undefined') {
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      url = 'https://crm-rfyq.onrender.com' + url;
+    }
+  }
+
+  let authReq = req.clone({ url });
 
   // Append token if user is authenticated and this is not a login/register request
   if (
@@ -20,7 +28,7 @@ export const authInterceptor: HttpInterceptorFn = (
     !req.url.includes('/auth/register') &&
     !req.url.includes('/auth/refresh')
   ) {
-    authReq = req.clone({
+    authReq = authReq.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
       }
@@ -39,7 +47,7 @@ export const authInterceptor: HttpInterceptorFn = (
         return authService.refreshSession().pipe(
           switchMap(() => {
             const newToken = authService.accessToken;
-            const retryReq = req.clone({
+            const retryReq = authReq.clone({
               setHeaders: {
                 Authorization: `Bearer ${newToken}`
               }

@@ -11,7 +11,11 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: "*",
+    origin: [
+      "https://ftnexavvycrm.vercel.app",
+      "http://localhost:4200",
+      "http://localhost:3000"
+    ],
     credentials: true,
   });
 
