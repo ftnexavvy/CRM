@@ -3,6 +3,7 @@ import { ClientRepository } from "../repositories/client.repository";
 import { CreateClientDto, ImportClientFromLeadDto, UpdateClientDto } from "../dto/client.dto";
 import { PrismaService } from "../../../core/prisma/prisma.service";
 import { WorkflowAutoAssignService } from "../../workflow/services/workflow-auto-assign.service";
+import { WorkflowRecalculateService } from "../../workflow/services/workflow-recalculate.service";
 import { ActivityService } from "../../activity/services/activity.service";
 
 @Injectable()
@@ -11,6 +12,7 @@ export class ClientService {
     private readonly clientRepo: ClientRepository,
     private readonly prisma: PrismaService,
     private readonly workflowAutoAssign: WorkflowAutoAssignService,
+    private readonly workflowRecalculate: WorkflowRecalculateService,
     private readonly activityService: ActivityService
   ) {}
 
@@ -79,7 +81,17 @@ export class ClientService {
 
   async update(companyId: string, actorId: string, id: string, dto: UpdateClientDto) {
     await this.findOne(companyId, id);
-    return this.clientRepo.update(companyId, id, dto);
+    const updatedClient = await this.clientRepo.update(companyId, id, dto);
+
+    if (dto.services !== undefined) {
+      try {
+        await this.workflowRecalculate.recalculateClientWorkflow(companyId, actorId, id);
+      } catch (err) {
+        console.error("Workflow recalculation error during update:", err);
+      }
+    }
+
+    return updatedClient;
   }
 
   async delete(companyId: string, id: string) {

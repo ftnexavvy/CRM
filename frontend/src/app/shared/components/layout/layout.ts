@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ChatService } from '../../../core/services/chat.service';
 import { ActivityService } from '../../../core/services/activity.service';
+import { playNotificationSound } from '../../../core/utils/audio.util';
 
 @Component({
   selector: 'app-layout',
@@ -65,7 +66,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.notificationService.all().subscribe({
       next: (res) => {
         if (res.success && Array.isArray(res.data)) {
+          const currentUnread = this.unreadCount();
           this.notifications.set(res.data);
+          const newUnread = this.unreadCount();
+          if (newUnread > currentUnread) {
+            playNotificationSound();
+          }
         }
       }
     });
@@ -74,7 +80,16 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.chatService.getMessages().subscribe({
       next: (res) => {
         if (res.success && Array.isArray(res.data)) {
+          const oldLen = this.chatMessages().length;
+          const newLen = res.data.length;
           this.chatMessages.set(res.data);
+          
+          if (newLen > oldLen && oldLen > 0) {
+            const lastMessage = res.data[newLen - 1];
+            if (lastMessage.senderId !== this.currentUser()?.id) {
+              playNotificationSound();
+            }
+          }
         }
       }
     });

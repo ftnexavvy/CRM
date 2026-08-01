@@ -10,7 +10,7 @@ export class TaskService {
     private readonly prisma: PrismaService,
     private readonly activityService: ActivityService,
     private readonly notificationService: NotificationService
-  ) {}
+  ) { }
 
   async createCustom(companyId: string, actorId: string, workflowId: string, dto: CreateCustomTaskDto) {
     const [workflow, department, user] = await Promise.all([
@@ -39,14 +39,14 @@ export class TaskService {
         isCustom: true,
         attachments: dto.attachments?.length
           ? {
-              create: dto.attachments.map((attachment) => ({
-                companyId,
-                uploadedById: actorId,
-                fileName: attachment.fileName,
-                fileUrl: attachment.fileUrl,
-                mimeType: attachment.mimeType,
-              })),
-            }
+            create: dto.attachments.map((attachment) => ({
+              companyId,
+              uploadedById: actorId,
+              fileName: attachment.fileName,
+              fileUrl: attachment.fileUrl,
+              mimeType: attachment.mimeType,
+            })),
+          }
           : undefined,
       },
       include: { comments: true, attachments: true },
@@ -140,11 +140,50 @@ export class TaskService {
     });
 
     if (status === "COMPLETED") {
-      // Automatically unlock downstream tasks depending on this task!
-      await this.prisma.task.updateMany({
-        where: { companyId, dependsOnTaskId: taskId, isLocked: true },
-        data: { isLocked: false }
+      // Find all tasks in the same workflow with the same title (handles legacy duplicate tasks or dependency mismatches)
+      const sameTitleTasks = await this.prisma.task.findMany({
+        where: { workflowId: task.workflowId, title: task.title },
+        select: { id: true }
       });
+      const targetIds = Array.from(new Set([...sameTitleTasks.map((t) => t.id), taskId]));
+
+      // Automatically unlock downstream tasks depending on this task or any same-titled task!
+      const unlockedTasks = await this.prisma.task.findMany({
+        where: {
+          companyId,
+          dependsOnTaskId: {
+            in: targetIds
+          },
+          isLocked: true
+        }
+      });
+
+      for (const nextTask of unlockedTasks) {
+
+        await this.prisma.task.update({
+          where: {
+            id: nextTask.id
+          },
+          data: {
+            isLocked: false,
+            status: nextTask.assignedToId
+              ? "ASSIGNED"
+              : "PENDING"
+          }
+        });
+
+        if (nextTask.assignedToId) {
+
+          await this.notificationService.notify(
+            companyId,
+            nextTask.assignedToId,
+            "New Task Unlocked",
+            `Task "${nextTask.title}" is now ready to start.`
+          );
+
+        }
+
+      }
 
       await this.activityService.log(
         companyId,

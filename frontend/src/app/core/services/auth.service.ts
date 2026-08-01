@@ -18,6 +18,8 @@ export interface User {
   role: any; // Can be string or full object
   status: string;
   company: Company;
+  designation?: string;
+  department?: string;
 }
 
 @Injectable({

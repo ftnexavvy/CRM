@@ -66,6 +66,10 @@ export class ClientsComponent implements OnInit {
   graphicsLogos = 0;
   graphicsOtherCreatives = 0;
 
+  // Photo & Video Configuration fields
+  photoSessions = 0;
+  videoSessions = 0;
+
   // Import from Lead modal
   showImportModal = false;
   importLeadId = '';
@@ -240,6 +244,7 @@ export class ClientsComponent implements OnInit {
     this.newNotes = '';
     this.newServiceIds = [];
     this.resetSmmConfig();
+    this.resetPhotoVideoConfig();
   }
 
   resetImportForm(): void {
@@ -248,6 +253,7 @@ export class ClientsComponent implements OnInit {
     this.importWebsite = '';
     this.importAddress = '';
     this.resetSmmConfig();
+    this.resetPhotoVideoConfig();
   }
 
   resetSmmConfig(): void {
@@ -262,6 +268,11 @@ export class ClientsComponent implements OnInit {
     this.smmClientApproval = true;
   }
 
+  resetPhotoVideoConfig(): void {
+    this.photoSessions = 0;
+    this.videoSessions = 0;
+  }
+
   getServiceNames(client: any): string {
     if (!client?.services || client.services.length === 0) return 'No services';
     return client.services.map((cs: any) => cs.service?.name || '').filter(Boolean).join(', ');
@@ -270,6 +281,7 @@ export class ClientsComponent implements OnInit {
   getServiceConfig(serviceId: string): any {
     if (this.isSmmService(serviceId)) return this.getSmmConfig();
     if (this.isGraphicsService(serviceId)) return this.getGraphicsConfig();
+    if (this.isPhotoVideoService(serviceId)) return this.getPhotoVideoConfig();
     return undefined;
   }
 
@@ -293,8 +305,26 @@ export class ClientsComponent implements OnInit {
     return serviceIds.some(id => this.isGraphicsService(id));
   }
 
+  isPhotoVideoService(serviceId: string): boolean {
+    const svc = this.services().find(s => s.id === serviceId);
+    const normalized = (svc?.name || '').toLowerCase().replace(/\s+/g, '');
+    return normalized.includes('photo') || normalized.includes('video') || normalized.includes('shoot');
+  }
+
+  isPhotoVideoSelected(serviceIds: string[]): boolean {
+    return serviceIds.some(id => this.isPhotoVideoService(id));
+  }
+
+  getPhotoVideoConfig(): any {
+    return {
+      photoSessions: this.photoSessions,
+      videoSessions: this.videoSessions
+    };
+  }
+
   getGraphicsConfig(): any {
-    if (this.graphicsImportSmm) {
+    const hasSmm = this.isSmmSelected(this.newServiceIds) || this.isSmmSelected(this.importServiceIds);
+    if (this.graphicsImportSmm && hasSmm) {
       return {
         importFromSmm: true,
         staticPosts: this.smmStaticPosts,
@@ -303,11 +333,13 @@ export class ClientsComponent implements OnInit {
         reelCovers: this.smmReels
       };
     }
+    const posts = this.graphicsStaticPosts || (this.graphicsCarouselPosts || this.graphicsStories ? 0 : 3);
+    const stories = this.graphicsStories || (this.graphicsStaticPosts || this.graphicsCarouselPosts ? 0 : 1);
     return {
       importFromSmm: false,
-      staticPosts: this.graphicsStaticPosts,
+      staticPosts: posts,
       carouselPosts: this.graphicsCarouselPosts,
-      stories: this.graphicsStories,
+      stories: stories,
       banners: this.graphicsBanners,
       brochures: this.graphicsBrochures,
       flyers: this.graphicsFlyers,

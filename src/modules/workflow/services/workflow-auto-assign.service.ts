@@ -3,6 +3,7 @@ import { AssignmentStatus, AssignmentStrategy, WorkflowEventType, WorkflowStatus
 import { PrismaService } from "../../../core/prisma/prisma.service";
 import { NotificationService } from "../../notifications/services/notification.service";
 import { ActivityService } from "../../activity/services/activity.service";
+import { generateCampaignSchedule } from "../utils/campaign-scheduler.util";
 
 /**
  * WorkflowAutoAssignService
@@ -125,12 +126,16 @@ export class WorkflowAutoAssignService {
         const isVideoTarget = target.includes("video") || target.includes("reel") || target.includes("edit");
         const isVideoDept = nameLower.includes("video") || nameLower.includes("reel") || nameLower.includes("edit") || codeLower.includes("video") || codeLower.includes("reel") || codeLower.includes("edit");
 
+        const isPhotoTarget = target.includes("photo") || target.includes("shoot");
+        const isPhotoDept = nameLower.includes("photo") || nameLower.includes("shoot") || codeLower.includes("photo") || codeLower.includes("shoot");
+
         return (
           nameLower === target ||
           codeLower === target ||
-          (isGraphicTarget && isGraphicDept) ||
-          (isSocialTarget && isSocialDept) ||
-          (isVideoTarget && isVideoDept)
+          (isPhotoTarget && isPhotoDept) ||
+          (!isPhotoTarget && isGraphicTarget && isGraphicDept) ||
+          (!isPhotoTarget && isSocialTarget && isSocialDept) ||
+          (!isPhotoTarget && isVideoTarget && isVideoDept && !isPhotoDept)
         );
       });
       return match ? match.id : null;
@@ -142,7 +147,11 @@ export class WorkflowAutoAssignService {
       const service = clientService.service;
       const config = clientService.configuration as any;
 
-      const dynamicTasks = this.resolveDynamicTasks(service, config, clientServicesToProcess);
+      const campaignStartDate = workflow.startedAt || new Date();
+      const campaignEndDate = new Date(campaignStartDate);
+      campaignEndDate.setDate(campaignEndDate.getDate() + 30);
+
+      const dynamicTasks = this.resolveDynamicTasks(service, config, clientServicesToProcess, campaignStartDate, campaignEndDate);
 
       for (const [index, taskDef] of dynamicTasks.entries()) {
         const taskDepartmentId = taskDef.departmentName
@@ -174,6 +183,7 @@ export class WorkflowAutoAssignService {
             isLocked: taskDef.isLocked ?? false,
             status: ownerId ? WorkflowStatus.ASSIGNED : WorkflowStatus.PENDING,
             assignedToId: ownerId ?? undefined,
+            dueDate: taskDef.dueDate,
           },
         });
         createdTasks += 1;
@@ -261,14 +271,18 @@ export class WorkflowAutoAssignService {
         const isVideoDept = deptNameLower.includes("video") || deptNameLower.includes("reel") || deptNameLower.includes("edit");
         const isVideoUser = uDept.includes("video") || uDept.includes("reel") || uDept.includes("edit") || uDesig.includes("video") || uDesig.includes("reel") || uDesig.includes("edit");
 
+        const isPhotoDept = deptNameLower.includes("photo") || deptNameLower.includes("shoot");
+        const isPhotoUser = uDept.includes("photo") || uDept.includes("shoot") || uDesig.includes("photo") || uDesig.includes("shoot");
+
         return (
           u.departmentId === department.id ||
           uDept === deptNameLower ||
           uDept === deptCodeLower ||
           uDept.includes(deptNameLower) ||
-          (isGraphicDept && isGraphicUser) ||
-          (isSocialDept && isSocialUser) ||
-          (isVideoDept && isVideoUser)
+          (isPhotoDept && isPhotoUser) ||
+          (!isPhotoDept && isGraphicDept && isGraphicUser) ||
+          (!isPhotoDept && isSocialDept && isSocialUser) ||
+          (!isPhotoDept && isVideoDept && isVideoUser && !isPhotoUser)
         );
       });
     }
@@ -306,9 +320,9 @@ export class WorkflowAutoAssignService {
     return fallbackOwnerId ?? null;
   }
 
-  private resolveDynamicTasks(service: any, config: any, allServicesConfig?: any[]): { title: string; departmentName?: string; type: any; dependsOnTitle?: string; isLocked?: boolean }[] {
+  public resolveDynamicTasks(service: any, config: any, allServicesConfig?: any[], campaignStartDate?: Date, campaignEndDate?: Date): { title: string; departmentName?: string; type: any; dependsOnTitle?: string; isLocked?: boolean; dueDate?: Date }[] {
     const serviceName = (service.name || "").toLowerCase().replace(/\s+/g, "");
-    const tasks: { title: string; departmentName?: string; type: any; dependsOnTitle?: string; isLocked?: boolean }[] = [];
+    const tasks: { title: string; departmentName?: string; type: any; dependsOnTitle?: string; isLocked?: boolean; dueDate?: Date }[] = [];
 
     if ((serviceName.includes("socialmedia") || serviceName.includes("smm") || serviceName.includes("social")) && config) {
       // 1. Social Media Manager Strategy & Planning Tasks
@@ -317,57 +331,69 @@ export class WorkflowAutoAssignService {
 
       // 2. 1-by-1 Itemized Handover Chains for Static Posts
       const staticPosts = parseInt(config.staticPosts || "0");
+      const postDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, staticPosts) : [];
       for (let i = 1; i <= staticPosts; i++) {
+        const dueDate = postDates[i - 1];
         const postTitle = `Design Post ${i}`;
-        tasks.push({ title: postTitle, departmentName: "Graphics Designer", type: "GRAPHIC" });
+        tasks.push({ title: postTitle, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate });
         tasks.push({
           title: `Schedule & Publish Post ${i}`,
           departmentName: "Social Media Manager",
           type: "CONTENT",
           dependsOnTitle: postTitle,
           isLocked: true,
+          dueDate
         });
       }
 
       // 3. 1-by-1 Itemized Handover Chains for Carousel Posts
       const carouselPosts = parseInt(config.carouselPosts || "0");
+      const carouselDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, carouselPosts) : [];
       for (let i = 1; i <= carouselPosts; i++) {
+        const dueDate = carouselDates[i - 1];
         const carouselTitle = `Design Carousel ${i}`;
-        tasks.push({ title: carouselTitle, departmentName: "Graphics Designer", type: "GRAPHIC" });
+        tasks.push({ title: carouselTitle, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate });
         tasks.push({
           title: `Schedule & Publish Carousel ${i}`,
           departmentName: "Social Media Manager",
           type: "CONTENT",
           dependsOnTitle: carouselTitle,
           isLocked: true,
+          dueDate
         });
       }
 
       // 4. 1-by-1 Itemized Handover Chains for Stories
       const stories = parseInt(config.stories || "0");
+      const storyDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, stories) : [];
       for (let i = 1; i <= stories; i++) {
+        const dueDate = storyDates[i - 1];
         const storyTitle = `Design Story ${i}`;
-        tasks.push({ title: storyTitle, departmentName: "Graphics Designer", type: "GRAPHIC" });
+        tasks.push({ title: storyTitle, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate });
         tasks.push({
           title: `Schedule & Publish Story ${i}`,
           departmentName: "Social Media Manager",
           type: "CONTENT",
           dependsOnTitle: storyTitle,
           isLocked: true,
+          dueDate
         });
       }
 
       // 5. 1-by-1 Itemized Handover Chains for Reels
       const reels = parseInt(config.reels || "0");
+      const reelDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, reels) : [];
       for (let i = 1; i <= reels; i++) {
+        const dueDate = reelDates[i - 1];
         const reelTitle = `Edit Reel ${i}`;
-        tasks.push({ title: reelTitle, departmentName: "Video Editor", type: "REEL" });
+        tasks.push({ title: reelTitle, departmentName: "Video Editor", type: "REEL", dueDate });
         tasks.push({
           title: `Schedule & Publish Reel ${i}`,
           departmentName: "Social Media Manager",
           type: "CONTENT",
           dependsOnTitle: reelTitle,
           isLocked: true,
+          dueDate
         });
       }
 
@@ -380,42 +406,105 @@ export class WorkflowAutoAssignService {
     }
 
     if ((serviceName.includes("graphic") || serviceName.includes("design")) && config) {
-      let posts = parseInt(config.staticPosts || "0");
-      let carousels = parseInt(config.carouselPosts || "0");
-      let stories = parseInt(config.stories || "0");
-      let reelCovers = parseInt(config.reelCovers || "0");
-
-      if (config.importFromSmm && allServicesConfig) {
-        const smmConfig = allServicesConfig.find((cs: any) => {
+      // SMM service ALREADY creates Design Post/Carousel/Story tasks (assigned to Graphics Designer dept)
+      // with proper dependsOnTitle + isLocked chains pointing to them.
+      // Duplicating those tasks here breaks the unlock: the completed GD-service task has a different
+      // DB id than the one Schedule & Publish depends on → lock never opens.
+      // FIX: Skip Post/Carousel/Story duplication whenever SMM is present; only generate Reel Covers.
+      if (allServicesConfig) {
+        const smmService = allServicesConfig.find((cs: any) => {
           const sName = (cs.service?.name || "").toLowerCase().replace(/\s+/g, "");
           return sName.includes("socialmedia") || sName.includes("smm") || sName.includes("social");
-        })?.configuration as any;
+        });
 
-        if (smmConfig) {
-          posts = parseInt(smmConfig.staticPosts || "0");
-          carousels = parseInt(smmConfig.carouselPosts || "0");
-          stories = parseInt(smmConfig.stories || "0");
-          reelCovers = parseInt(smmConfig.reels || "0");
+        if (smmService) {
+          const smmConfig = smmService.configuration as any;
+          const reelCovers = parseInt(smmConfig?.reels || config.reelCovers || "0");
+          const coverDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, reelCovers) : [];
+          for (let i = 1; i <= reelCovers; i++) {
+            const dueDate = coverDates[i - 1];
+            tasks.push({ title: `Design Reel Cover ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate });
+          }
+          return tasks;
         }
       }
 
-      for (let i = 1; i <= posts; i++) tasks.push({ title: `Design Post ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC" });
-      for (let i = 1; i <= carousels; i++) tasks.push({ title: `Design Carousel ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC" });
-      for (let i = 1; i <= stories; i++) tasks.push({ title: `Design Story ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC" });
-      for (let i = 1; i <= reelCovers; i++) tasks.push({ title: `Design Reel Cover ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC" });
+      // Standalone Graphics Designer service (no SMM linked): generate all tasks independently.
+      const posts = parseInt(config.staticPosts || "0");
+      const carousels = parseInt(config.carouselPosts || "0");
+      const stories = parseInt(config.stories || "0");
+      const reelCovers = parseInt(config.reelCovers || "0");
+
+      const pDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, posts) : [];
+      const cDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, carousels) : [];
+      const sDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, stories) : [];
+      const rDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, reelCovers) : [];
+
+      for (let i = 1; i <= posts; i++) tasks.push({ title: `Design Post ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate: pDates[i - 1] });
+      for (let i = 1; i <= carousels; i++) tasks.push({ title: `Design Carousel ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate: cDates[i - 1] });
+      for (let i = 1; i <= stories; i++) tasks.push({ title: `Design Story ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate: sDates[i - 1] });
+      for (let i = 1; i <= reelCovers; i++) tasks.push({ title: `Design Reel Cover ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate: rDates[i - 1] });
+
+      if (tasks.length === 0) {
+        const fallbacks = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, 3) : [];
+        tasks.push({ title: "Design Post 1", departmentName: "Graphics Designer", type: "GRAPHIC", dueDate: fallbacks[0] });
+        tasks.push({ title: "Design Post 2", departmentName: "Graphics Designer", type: "GRAPHIC", dueDate: fallbacks[1] });
+        tasks.push({ title: "Design Story 1", departmentName: "Graphics Designer", type: "GRAPHIC", dueDate: fallbacks[2] });
+      }
 
       return tasks;
     }
 
+    if ((serviceName.includes("photo") || serviceName.includes("shoot")) && config && (config.photoSessions !== undefined || config.videoSessions !== undefined)) {
+      const photoSessions = parseInt(config.photoSessions || "0");
+      const videoSessions = parseInt(config.videoSessions || "0");
+
+      const pDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, photoSessions) : [];
+      for (let i = 1; i <= photoSessions; i++) {
+        const dueDate = pDates[i - 1];
+        const photoTitle = `Photography Session ${i}`;
+        tasks.push({ title: photoTitle, departmentName: "Photography & Video Shoot", type: "GENERIC", dueDate });
+        const designTitle = `Design Post ${i} (from Photo)`;
+        tasks.push({ title: designTitle, departmentName: "Graphics Designer", type: "GRAPHIC", dependsOnTitle: photoTitle, isLocked: true, dueDate });
+        tasks.push({ title: `Schedule & Publish Post ${i} (from Photo)`, departmentName: "Social Media Manager", type: "CONTENT", dependsOnTitle: designTitle, isLocked: true, dueDate });
+      }
+
+      const vDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, videoSessions) : [];
+      for (let i = 1; i <= videoSessions; i++) {
+        const dueDate = vDates[i - 1];
+        const videoTitle = `Video Shoot Session ${i}`;
+        tasks.push({ title: videoTitle, departmentName: "Photography & Video Shoot", type: "GENERIC", dueDate });
+        const editTitle = `Edit Reel ${i} (from Video)`;
+        tasks.push({ title: editTitle, departmentName: "Video Editor", type: "REEL", dependsOnTitle: videoTitle, isLocked: true, dueDate });
+        tasks.push({ title: `Schedule & Publish Reel ${i} (from Video)`, departmentName: "Social Media Manager", type: "CONTENT", dependsOnTitle: editTitle, isLocked: true, dueDate });
+      }
+      return tasks;
+    }
+
     if ((serviceName.includes("video") || serviceName.includes("reel") || serviceName.includes("edit")) && config) {
+      if (allServicesConfig) {
+        const smmService = allServicesConfig.find((cs: any) => {
+          const sName = (cs.service?.name || "").toLowerCase().replace(/\s+/g, "");
+          return sName.includes("socialmedia") || sName.includes("smm") || sName.includes("social");
+        });
+
+        if (smmService) {
+          // SMM service ALREADY creates Edit Reel N tasks (assigned to Video Editor)
+          return tasks;
+        }
+      }
+
       let reels = parseInt(config.reels || "0");
       let reelCovers = parseInt(config.reelCovers || "0");
 
+      const rDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, reels) : [];
+      const cDates = (campaignStartDate && campaignEndDate) ? generateCampaignSchedule(campaignStartDate, campaignEndDate, reelCovers) : [];
+
       for (let i = 1; i <= reels; i++) {
-        tasks.push({ title: `Edit Reel ${i}`, departmentName: "Video Editor", type: "REEL" });
+        tasks.push({ title: `Edit Reel ${i}`, departmentName: "Video Editor", type: "REEL", dueDate: rDates[i-1] });
       }
       for (let i = 1; i <= reelCovers; i++) {
-        tasks.push({ title: `Design Reel Cover ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC" });
+        tasks.push({ title: `Design Reel Cover ${i}`, departmentName: "Graphics Designer", type: "GRAPHIC", dueDate: cDates[i-1] });
       }
       return tasks;
     }
@@ -462,7 +551,7 @@ export class WorkflowAutoAssignService {
         id: cs.service.id,
         name: cs.service.name,
         departmentId: cs.service.departmentId ?? null,
-        templateCount: this.resolveDynamicTasks(cs.service, cs.configuration).length,
+        templateCount: this.resolveDynamicTasks(cs.service, cs.configuration, [], new Date(), new Date()).length,
       })),
     };
   }

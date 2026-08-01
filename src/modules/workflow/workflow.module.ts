@@ -9,11 +9,12 @@ import { TaskService } from "./services/task.service";
 import { WorkflowAutoAssignService } from "./services/workflow-auto-assign.service";
 import { PermissionsGuard } from "../user/guards/permissions.guard";
 import { PrismaService } from "../../core/prisma/prisma.service";
+import { WorkflowRecalculateService } from "./services/workflow-recalculate.service";
 
 @Module({
   controllers: [WorkflowController, DepartmentController, TaskController],
-  providers: [WorkflowService, DepartmentService, TaskService, WorkflowAutoAssignService, WorkflowRepository, PermissionsGuard, PrismaService],
-  exports: [WorkflowService, WorkflowAutoAssignService],
+  providers: [WorkflowService, DepartmentService, TaskService, WorkflowAutoAssignService, WorkflowRecalculateService, WorkflowRepository, PermissionsGuard, PrismaService],
+  exports: [WorkflowService, WorkflowAutoAssignService, WorkflowRecalculateService],
 })
 export class WorkflowModule {}
 

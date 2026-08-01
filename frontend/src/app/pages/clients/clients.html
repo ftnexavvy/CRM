@@ -330,6 +330,22 @@
       </div>
     }
 
+    @if (isPhotoVideoSelected(newServiceIds)) {
+      <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
+        <h4 class="mb-3">📸 Photography & Video Shoot Configuration</h4>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Number of Photography Sessions</label>
+            <input type="number" class="form-control" [(ngModel)]="photoSessions" name="pv_photo" min="0">
+          </div>
+          <div class="form-group">
+            <label>Number of Video Shoot Sessions</label>
+            <input type="number" class="form-control" [(ngModel)]="videoSessions" name="pv_video" min="0">
+          </div>
+        </div>
+      </div>
+    }
+
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" (click)="showCreateModal = false">Cancel</button>
       <button type="submit" class="btn btn-primary" [disabled]="submitting()">
@@ -485,6 +501,22 @@
             </div>
           </div>
         }
+      </div>
+    }
+
+    @if (isPhotoVideoSelected(importServiceIds)) {
+      <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
+        <h4 class="mb-3">📸 Photography & Video Shoot Configuration</h4>
+        <div class="form-grid mb-3">
+          <div class="form-group">
+            <label>Number of Photography Sessions</label>
+            <input type="number" class="form-control" [(ngModel)]="photoSessions" name="pv_photo_imp" min="0">
+          </div>
+          <div class="form-group">
+            <label>Number of Video Shoot Sessions</label>
+            <input type="number" class="form-control" [(ngModel)]="videoSessions" name="pv_video_imp" min="0">
+          </div>
+        </div>
       </div>
     }
 

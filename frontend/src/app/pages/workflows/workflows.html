@@ -1,333 +1,546 @@
 <div class="workflows-page">
-  <!-- Left Side: Queues & List -->
-  <div class="workflows-sidebar-list card">
-    <div class="list-header">
-      <h2 class="card-title">Workflows</h2>
-      <span class="auto-pill">Auto Workflow</span>
-    </div>
 
-    <div class="form-group dept-selector">
-      <label for="deptSelect">Filter by Department</label>
-      <select id="deptSelect" [(ngModel)]="selectedDeptId" (change)="onDeptChange()">
-        <option value="">— Select Department —</option>
-        <option value="unassigned">Unassigned / Pending</option>
-        @for (dept of departments(); track dept.id) {
-          <option [value]="dept.id">{{ dept.name }}</option>
-        }
-      </select>
-    </div>
+  <!-- ══════════════════════ LEFT SIDEBAR ══════════════════════ -->
+  <aside class="wf-sidebar card">
 
-    <div class="form-group dept-selector mt-2">
-      <label for="clientSelect">Or Filter by Client</label>
-      <select id="clientSelect" [(ngModel)]="selectedClientId" (change)="onClientChange()">
-        <option value="">— Select Client —</option>
-        @for (client of clients(); track client.id) {
-          <option [value]="client.id">{{ client.name }} ({{ client.email }})</option>
-        }
-      </select>
-    </div>
-
-    @if (loadingWorkflows()) {
-      <div class="loader-container">
-        <div class="spinner spinner-sm"></div>
+    <div class="wf-sidebar-header">
+      <div>
+        <h2 class="wf-sidebar-title">Workflows</h2>
+        <span class="auto-pill">Auto Workflow</span>
       </div>
-    } @else if (workflows().length === 0) {
-      <div class="empty-state">
-        <p>No active workflows in this department.</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="wf-filters">
+      <div class="form-group">
+        <label for="deptSelect">Department</label>
+        <select id="deptSelect" [(ngModel)]="selectedDeptId" (change)="onDeptChange()">
+          <option value="">— All Departments —</option>
+          <option value="unassigned">Unassigned / Pending</option>
+          @for (dept of departments(); track dept.id) {
+            <option [value]="dept.id">{{ dept.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="clientSelect">Client</label>
+        <select id="clientSelect" [(ngModel)]="selectedClientId" (change)="onClientChange()">
+          <option value="">— All Clients —</option>
+          @for (client of clients(); track client.id) {
+            <option [value]="client.id">{{ client.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="wf-search-wrap">
+        <span class="wf-search-icon">🔍</span>
+        <input
+          class="wf-search-input"
+          type="text"
+          placeholder="Search workflows..."
+          [(ngModel)]="workflowSearchQuery"
+        />
+      </div>
+    </div>
+
+    <!-- List -->
+    @if (loadingWorkflows()) {
+      <div class="loader-container"><div class="spinner spinner-sm"></div></div>
+    } @else if (filteredWorkflows().length === 0) {
+      <div class="wf-empty-list">
+        <span>📭</span>
+        <p>No workflows found.</p>
       </div>
     } @else {
-      <div class="workflow-list-items">
-        @for (wf of workflows(); track wf.id) {
-          <div class="workflow-list-item" [ngClass]="{ active: selectedWorkflow()?.id === wf.id }" (click)="selectWorkflow(wf.id)">
-            <div class="wf-item-meta">
-              <span class="subject-tag">{{ wf.subjectType }} #{{ wf.subjectId }}</span>
+      <div class="wf-list-scroll">
+        @for (wf of filteredWorkflows(); track wf.id) {
+          <div
+            class="wf-list-item"
+            [class.active]="selectedWorkflow()?.id === wf.id"
+            (click)="selectWorkflow(wf.id)"
+          >
+            <div class="wf-item-row1">
+              <span class="wf-subject-pill">{{ wf.subjectType }}</span>
               <span class="badge" [ngClass]="wf.status | lowercase">{{ wf.status | formatEnum }}</span>
             </div>
             <div class="wf-item-title">{{ wf.title }}</div>
-            <div class="wf-item-date">Updated {{ wf.updatedAt | date:'short' }}</div>
+            <div class="wf-item-date">Updated {{ wf.updatedAt | date:'d MMM, h:mm a' }}</div>
           </div>
         }
       </div>
     }
-  </div>
+  </aside>
 
-  <!-- Right Side: Detailed View & Actions -->
-  <div class="workflow-details-panel">
+  <!-- ══════════════════════ MAIN PANEL ══════════════════════ -->
+  <div class="wf-main-panel">
+
     @if (loadingDetails()) {
-      <div class="loader-container full-height card">
+      <div class="loader-container card" style="height:100%; min-height:300px;">
         <div class="spinner"></div>
       </div>
+
     } @else if (!selectedWorkflow()) {
-      <div class="no-selection card">
-        <div class="empty-selection-icon">⚡</div>
-        <h3>Select a workflow to view details</h3>
-        <p>Select a department on the left, then click on a workflow to manage assignments, view tasks timeline, or trigger actions.</p>
+      <div class="wf-no-selection card">
+        <div class="wf-empty-icon">⚡</div>
+        <h3>Select a Workflow</h3>
+        <p>Choose a department or client on the left, then click on a workflow to manage tasks, assignments, and history.</p>
       </div>
+
     } @else {
-      <div class="details-layout-grid">
-        <!-- Main details card -->
-        <div class="card detail-card main-info-card">
-          <div class="detail-header">
-            <div>
-              <span class="subject-heading">{{ selectedWorkflow().subjectType }} ID: #{{ selectedWorkflow().subjectId }}</span>
-              <h2 class="detail-title">{{ selectedWorkflow().title }}</h2>
-              @if (selectedWorkflow().isAutoGenerated) {
-                <div class="auto-generated-badge">Auto Workflow ✓</div>
-              }
+      <div class="wf-sticky-header card">
+        <div class="wf-header-top">
+          <div class="wf-header-left">
+            <div class="wf-client-tag">
+              <span class="client-icon">🏢</span>
+              <span class="client-label">CLIENT:</span>
+              <strong class="client-name-str">{{ getClientName(selectedWorkflow()) }}</strong>
             </div>
-            <span class="badge badge-lg" [ngClass]="selectedWorkflow().status | lowercase">{{ selectedWorkflow().status | formatEnum }}</span>
+            <h2 class="wf-header-title">{{ selectedWorkflow().title }}</h2>
           </div>
-
-          <div class="workflow-progress-panel">
-            <div>
-              <span class="block-label">Workflow Progress</span>
-              <div class="progress-title">{{ workflowStats().progress }}% Complete</div>
-              <div class="progress-subtitle">{{ workflowStats().completed }} / {{ workflowStats().total }} Tasks Completed</div>
-            </div>
-            <div class="progress-meter" aria-hidden="true">
-              <div class="progress-meter-fill" [style.width.%]="workflowStats().progress"></div>
-            </div>
-            <div class="stats-grid">
-              <div><strong>{{ workflowStats().total }}</strong><span>Total</span></div>
-              <div><strong>{{ workflowStats().completed }}</strong><span>Completed</span></div>
-              <div><strong>{{ workflowStats().pending }}</strong><span>Pending</span></div>
-              <div><strong>{{ workflowStats().overdue }}</strong><span>Overdue</span></div>
-            </div>
+          <div class="wf-header-right">
+            <span class="badge badge-lg" [ngClass]="selectedWorkflow().status | lowercase">
+              {{ selectedWorkflow().status | formatEnum }}
+            </span>
           </div>
+        </div>
 
-          <!-- Actions Row -->
-          <div class="actions-panel-row">
+        <!-- Actions Toolbar -->
+          <div class="wf-actions-bar">
             @if (isAdminUser() && authService.hasPermission('Task.Generate') && selectedWorkflow().status !== 'COMPLETED') {
-              <button class="btn btn-primary" (click)="openCustomTaskModal()">Add Custom Task</button>
+              <button class="btn btn-primary btn-sm" (click)="openCustomTaskModal()">+ Add Task</button>
             }
 
-            <!-- User is assigned to this workflow -->
-            @if (canAct()) {
-              <!-- If ASSIGNED, can Accept or Reject -->
+            <!-- Workflow-level Accept / Reject — only for the assigned dept lead -->
+            @if (isWorkflowAssignee()) {
               @if (selectedWorkflow().assignments?.[0]?.status === 'ASSIGNED') {
-                <button class="btn btn-success" (click)="acceptWorkflow()">Accept Work</button>
-                <button class="btn btn-danger" (click)="openActionModal('reject')">Reject</button>
+                <button class="btn btn-success btn-sm" (click)="acceptWorkflow()">✔ Accept Work</button>
+                <button class="btn btn-danger btn-sm" (click)="openActionModal('reject')">✖ Reject</button>
               }
-              <!-- If ACCEPTED (i.e. IN_PROGRESS), can Complete/Submit Review -->
               @if (selectedWorkflow().assignments?.[0]?.status === 'ACCEPTED') {
-                <button class="btn btn-primary" (click)="openActionModal('complete')">Complete & Review</button>
+                <button class="btn btn-primary btn-sm" (click)="openActionModal('complete')">🏁 Complete & Review</button>
               }
             }
 
-            <!-- Admins/Managers can Approve, Reassign, Regenerate or Delete -->
             @if (isAdminUser() && authService.hasPermission('Workflow.Approve') && (selectedWorkflow().status === 'REVIEW' || selectedWorkflow().status === 'IN_PROGRESS')) {
-              <button class="btn btn-success" (click)="openActionModal('approve')">Approve Workflow</button>
+              <button class="btn btn-success btn-sm" (click)="openActionModal('approve')">✔ Approve</button>
             }
-
             @if (isAdminUser() && authService.hasPermission('Workflow.Assign') && selectedWorkflow().status !== 'COMPLETED' && selectedWorkflow().status !== 'CANCELLED') {
               @if (selectedWorkflow().assignments?.length === 0) {
-                <button class="btn btn-secondary" (click)="openAssignModal(false)">Reassign Employee</button>
-              } @else if (authService.hasPermission('Workflow.Transfer')) {
-                <button class="btn btn-secondary" (click)="openAssignModal(true)">Reassign Employee</button>
+                <button class="btn btn-secondary btn-sm" (click)="openAssignModal(false)">👤 Assign</button>
               }
             }
-
             @if (isAdminUser() && authService.hasPermission('Workflow.Create') && selectedWorkflow().isAutoGenerated && selectedWorkflow().status !== 'COMPLETED') {
-              <button class="btn btn-secondary" (click)="regenerateWorkflow()">Regenerate Workflow</button>
+              <button class="btn btn-secondary btn-sm" (click)="regenerateWorkflow()">⟳ Regenerate</button>
+            }
+            @if (isAdminUser() && authService.hasPermission('Workflow.Delete')) {
+              <button class="btn btn-danger btn-sm" (click)="deleteWorkflow(selectedWorkflow().id)">🗑 Delete</button>
             }
 
-            <!-- Delete workflow (Admins/Those with permission) -->
-            @if (isAdminUser() && authService.hasPermission('Workflow.Delete')) {
-              <button class="btn btn-danger" (click)="deleteWorkflow(selectedWorkflow().id)">Delete Workflow</button>
+            @if (!isAdminUser() && myTasksCount() > 0) {
+              <span class="my-tasks-badge">📋 {{ myTasksCount() }} task{{ myTasksCount() === 1 ? '' : 's' }} assigned to you</span>
             }
           </div>
 
-          <div class="grid-details-split">
-            <!-- Assignment Details -->
-            <div class="info-block">
-              <span class="block-label">Current Assignment</span>
-              @if (selectedWorkflow().assignments && selectedWorkflow().assignments.length > 0) {
-                <div class="assignee-box">
-                  <div class="assignee-avatar">👤</div>
-                  <div>
-                    <div class="assignee-name">{{ getEmployeeName(selectedWorkflow().assignments[0].assignedToId) }}</div>
-                    <div class="assignee-dept">{{ getDepartmentName(selectedWorkflow().assignments[0].departmentId) }}</div>
-                    <div class="assignee-status">
-                      Status: <span class="badge" [ngClass]="selectedWorkflow().assignments[0].status | lowercase">{{ selectedWorkflow().assignments[0].status | formatEnum }}</span>
-                    </div>
-                    @if (selectedWorkflow().assignments[0].remarks) {
-                      <div class="assignee-remarks">"{{ selectedWorkflow().assignments[0].remarks }}"</div>
-                    }
+        <div class="wf-tabs">
+          <button class="wf-tab-btn" [class.active]="activeTab() === 'dashboard'" (click)="activeTab.set('dashboard')">Overview</button>
+          <button class="wf-tab-btn" [class.active]="activeTab() === 'tasks'" (click)="activeTab.set('tasks')">Services & Tasks</button>
+          <button class="wf-tab-btn" [class.active]="activeTab() === 'timeline'" (click)="activeTab.set('timeline')">Timeline</button>
+        </div>
+      </div>
+
+      <div class="wf-tab-content">
+        @if (activeTab() === 'dashboard') {
+          <div class="wf-detail-grid">
+            <!-- ── TODAY'S PRIORITY WIDGET (TOP BAR) ───────────────────── -->
+        <div class="card wf-priority-widget">
+          <div class="priority-widget-header">
+            <div class="priority-title">
+              <span class="priority-icon">🔥</span>
+              <strong>Today's Priority & Deliverables</strong>
+            </div>
+            <div class="priority-sub">Role: {{ authService.currentUser()?.designation || authService.currentUser()?.department || 'Operations' }}</div>
+          </div>
+          <div class="priority-columns">
+            <!-- Today's Tasks -->
+            <div class="priority-col today-col">
+              <div class="pcol-head">
+                <span class="pcol-dot green"></span>
+                <span>Today's Tasks ({{ todayPriorityTasks().today.length }})</span>
+              </div>
+              <div class="pcol-list">
+                @if (todayPriorityTasks().today.length === 0) {
+                  <div class="pcol-empty">No tasks scheduled for today</div>
+                }
+                @for (t of todayPriorityTasks().today; track t.id) {
+                  <div class="pcol-item" (click)="openTaskDetail(t)">
+                    <span class="pcol-platform">{{ getTaskPlatform(t).icon }}</span>
+                    <span class="pcol-task-title">{{ t.title }}</span>
+                    <span class="pcol-due">Today</span>
                   </div>
-                </div>
-              } @else {
-                <p class="text-muted italic">Unassigned workflow. Assign to a department & user to start.</p>
-              }
+                }
+              </div>
             </div>
 
-            <!-- Workflow Meta -->
-            <div class="info-block">
-              <span class="block-label">System Metadata</span>
-              <div class="meta-row"><span>Version:</span> <strong>v{{ selectedWorkflow().version }}</strong></div>
-              <div class="meta-row"><span>Started At:</span> <span class="text-muted">{{ (selectedWorkflow().startedAt | date:'medium') || 'Not started' }}</span></div>
-              <div class="meta-row"><span>Completed At:</span> <span class="text-muted">{{ (selectedWorkflow().completedAt | date:'medium') || 'Active' }}</span></div>
+            <!-- Tomorrow's Tasks -->
+            <div class="priority-col tomorrow-col">
+              <div class="pcol-head">
+                <span class="pcol-dot blue"></span>
+                <span>Tomorrow ({{ todayPriorityTasks().tomorrow.length }})</span>
+              </div>
+              <div class="pcol-list">
+                @if (todayPriorityTasks().tomorrow.length === 0) {
+                  <div class="pcol-empty">No tasks for tomorrow</div>
+                }
+                @for (t of todayPriorityTasks().tomorrow; track t.id) {
+                  <div class="pcol-item" (click)="openTaskDetail(t)">
+                    <span class="pcol-platform">{{ getTaskPlatform(t).icon }}</span>
+                    <span class="pcol-task-title">{{ t.title }}</span>
+                    <span class="pcol-due">Tomorrow</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Overdue Tasks -->
+            <div class="priority-col overdue-col">
+              <div class="pcol-head">
+                <span class="pcol-dot red"></span>
+                <span>Overdue ({{ todayPriorityTasks().overdue.length }})</span>
+              </div>
+              <div class="pcol-list">
+                @if (todayPriorityTasks().overdue.length === 0) {
+                  <div class="pcol-empty">No overdue tasks! 🎉</div>
+                }
+                @for (t of todayPriorityTasks().overdue; track t.id) {
+                  <div class="pcol-item overdue" (click)="openTaskDetail(t)">
+                    <span class="pcol-platform">{{ getTaskPlatform(t).icon }}</span>
+                    <span class="pcol-task-title">{{ t.title }}</span>
+                    <span class="pcol-due text-danger">Past Due</span>
+                  </div>
+                }
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Tasks Card -->
-        <div class="card detail-card tasks-card">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-              <h3 class="card-title">Services & Deliverables Workflow</h3>
-              <p class="section-desc">Department-wise split of activities, assigned team members, and status progress.</p>
+        <!-- ── CAMPAIGN PROGRESS & DELIVERABLES ───────────────── -->
+        <div class="card wf-campaign-metrics-widget" style="margin-top: 20px;">
+          <div class="priority-widget-header">
+            <div class="priority-title">
+              <span class="priority-icon">📊</span>
+              <strong>Campaign Progress</strong>
             </div>
-            <span class="badge badge-lg bg-info">{{ serviceSections().length }} Services Active</span>
+            <div class="priority-sub">Overall Completion: {{ getCampaignMetrics().progressPercent }}%</div>
+          </div>
+          
+          <div class="priority-columns" style="display: flex; gap: 20px; padding: 15px;">
+             <!-- POSTS -->
+             <div class="priority-col" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px;">
+               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--text-color);">📱 Static Posts / Carousels</div>
+               <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Total:</span> <strong>{{ getCampaignMetrics().totalPosts }}</strong></div>
+               <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Completed:</span> <strong class="text-success">{{ getCampaignMetrics().completedPosts }}</strong></div>
+               <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Remaining:</span> <strong class="text-warning">{{ getCampaignMetrics().remainingPosts }}</strong></div>
+             </div>
+
+             <!-- REELS -->
+             <div class="priority-col" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px;">
+               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--text-color);">🎬 Reels & Videos</div>
+               <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Total:</span> <strong>{{ getCampaignMetrics().totalReels }}</strong></div>
+               <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Completed:</span> <strong class="text-success">{{ getCampaignMetrics().completedReels }}</strong></div>
+               <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Remaining:</span> <strong class="text-warning">{{ getCampaignMetrics().remainingReels }}</strong></div>
+             </div>
+             
+             <!-- PROGRESS -->
+             <div class="priority-col" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: var(--text-color);">Overall Progress</div>
+               <div style="width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(var(--primary-color) {{ getCampaignMetrics().progressPercent }}%, var(--border-color) 0); display: flex; justify-content: center; align-items: center; position: relative;">
+                  <div style="width: 80px; height: 80px; background: var(--bg-color); border-radius: 50%; position: absolute; top: 10px; left: 10px;"></div>
+                  <strong style="position: relative; z-index: 2; font-size: 1.2rem;">{{ getCampaignMetrics().progressPercent }}%</strong>
+               </div>
+             </div>
+          </div>
+        </div>
+
+            <!-- ── CLIENT & BILLING CYCLE HEADER CARD ───────────────── -->
+        <div class="card wf-header-card">
+
+          <div class="wf-header-top">
+            <div class="wf-header-left">
+              <!-- Platform Badges -->
+              <div class="platform-badges-row">
+                <span class="platform-title-label">Target Platforms:</span>
+                @for (p of getPlatformsForWorkflow(selectedWorkflow()); track p.name) {
+                  <span class="platform-chip" [style.border-color]="p.color">
+                    <span>{{ p.icon }}</span>
+                    <span>{{ p.name }}</span>
+                  </span>
+                }
+              </div>
+            </div>
+
+            <div class="wf-header-right">
+              
+              <div class="billing-cycle-pill">
+                <span class="bc-label">📅 Billing Cycle:</span>
+                <span class="bc-val">{{ getBillingCycleInfo(selectedWorkflow()).formattedRange }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly Deliverable Requirement Summary Cards -->
+          <div class="deliverables-summary-grid">
+            @for (d of getDeliverableSummary(selectedWorkflow()); track d.name) {
+              <div class="deliv-card">
+                <div class="deliv-head">
+                  <span class="deliv-name">{{ d.name }} Requirement</span>
+                  <span class="deliv-pct">{{ d.pct }}%</span>
+                </div>
+                <div class="deliv-body">
+                  <div class="deliv-num-block">
+                    <span class="deliv-num">{{ d.completed }}</span>
+                    <span class="deliv-total">/ {{ d.total }} Completed</span>
+                  </div>
+                  <span class="deliv-rem-tag" [class.done]="d.remaining === 0">
+                    {{ d.remaining === 0 ? 'All Completed ✅' : d.remaining + ' Remaining' }}
+                  </span>
+                </div>
+                <div class="wsc-progress-track">
+                  <div class="wsc-progress-fill graphics" [style.width.%]="d.pct"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Meta + Assignment row -->
+          <div class="wf-meta-assign-row">
+            <div class="wf-meta-block">
+              <div class="meta-pill"><span>v{{ selectedWorkflow().version }}</span><span class="meta-key">Version</span></div>
+              <div class="meta-pill"><span>{{ (selectedWorkflow().startedAt | date:'d MMM yy') || '—' }}</span><span class="meta-key">Started</span></div>
+              <div class="meta-pill"><span>{{ (selectedWorkflow().completedAt | date:'d MMM yy') || 'Active' }}</span><span class="meta-key">Completed</span></div>
+            </div>
+
+            @if (selectedWorkflow().assignments && selectedWorkflow().assignments.length > 0) {
+              <div class="wf-assignee-chip">
+                <div class="wf-avatar">{{ getInitials(getEmployeeName(selectedWorkflow().assignments[0].assignedToId)) }}</div>
+                <div>
+                  <div class="wf-assignee-name">{{ getEmployeeName(selectedWorkflow().assignments[0].assignedToId) }}</div>
+                  <div class="wf-assignee-dept">{{ getDepartmentName(selectedWorkflow().assignments[0].departmentId) }}</div>
+                </div>
+                <span class="badge" [ngClass]="selectedWorkflow().assignments[0].status | lowercase">
+                  {{ selectedWorkflow().assignments[0].status | formatEnum }}
+                </span>
+              </div>
+            } @else {
+              <div class="wf-unassigned-chip">⚠️ Unassigned workflow</div>
+            }
+          </div>
+            </div>
+          </div>
+        }
+
+        @if (activeTab() === 'tasks') {
+          <!-- ── SERVICES & TASKS CARD ───────────────────────────── -->
+        <div class="card wf-tasks-card full-height">
+          <div class="wf-section-header">
+            <div>
+              <h3 class="card-title">Services & Deliverables</h3>
+              @if (isAdminUser()) {
+                <p class="section-desc">Department-wise tasks, assigned team members, and progress.</p>
+              } @else {
+                <p class="section-desc">Showing only tasks assigned to you.</p>
+              }
+            </div>
+            @if (isAdminUser()) {
+              <span class="badge badge-lg bg-info">{{ serviceSections().length }} Services</span>
+            } @else {
+              <span class="badge badge-lg" style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.25)">{{ myTasksCount() }} My Tasks</span>
+            }
           </div>
 
           @if (!selectedWorkflow().tasks || selectedWorkflow().tasks.length === 0) {
             <div class="empty-state">
-              <p>No service template tasks exist yet. Regenerate the workflow after onboarding client services.</p>
+              <p>No tasks found. Regenerate the workflow after onboarding client services.</p>
             </div>
           } @else {
-            <div class="service-cards-grid mb-4">
+            <div class="wf-service-grid">
               @for (section of serviceSections(); track section.key) {
-                <div class="service-card" [ngClass]="section.cardType">
-                  <div class="service-card-header">
-                    <div class="service-icon-title">
-                      <span class="service-icon">
-                        @if (section.cardType === 'social') { 🟦 }
-                        @else if (section.cardType === 'graphics') { 🟩 }
-                        @else if (section.cardType === 'video') { 🟨 }
-                        @else { 🟣 }
-                      </span>
+                <div class="wf-service-card" [ngClass]="section.cardType">
+                  <!-- Card Header -->
+                  <div class="wsc-header">
+                    <div class="wsc-icon-title">
+                      <span class="wsc-dot" [ngClass]="section.cardType"></span>
                       <div>
-                        <h4 class="service-title">{{ section.name }}</h4>
-                        <span class="dept-sub text-muted">{{ section.departmentName }}</span>
+                        <h4 class="wsc-title">{{ section.name }}</h4>
+                        <span class="wsc-dept">{{ section.departmentName }}</span>
                       </div>
                     </div>
                     <span class="badge" [ngClass]="'badge-' + section.statusClass">{{ section.status }}</span>
                   </div>
 
-                  <div class="service-assignee-row mt-3">
-                    <span class="label">Assigned Department Lead:</span>
-                    <strong class="assignee-val">👤 {{ section.assigneeName }}</strong>
+                  <!-- Assignee -->
+                  <div class="wsc-assignee-row">
+                    <div class="wsc-avatar">
+                      @if (section.assigneeName && section.assigneeName !== '—') {
+                        {{ getInitials(section.assigneeName) }}
+                      } @else if (!isAdminUser()) {
+                        {{ getInitials(getEmployeeName(authService.currentUser()?.id)) }}
+                      } @else {
+                        ?
+                      }
+                    </div>
+                    <div>
+                      <div class="wsc-assignee-name">
+                        @if (section.assigneeName && section.assigneeName !== '—') {
+                          {{ section.assigneeName }}
+                        } @else if (!isAdminUser()) {
+                          {{ getEmployeeName(authService.currentUser()?.id) }}
+                        } @else {
+                          Unassigned
+                        }
+                      </div>
+                      <div class="wsc-assignee-role">{{ isAdminUser() ? 'Department Lead' : 'Assigned To You' }}</div>
+                    </div>
                   </div>
 
-                  <div class="service-progress-box mt-3">
-                    <div class="d-flex justify-content-between text-sm mb-1">
-                      <span>Progress</span>
-                      <strong>{{ section.progress }}% ({{ section.completed }}/{{ section.total }})</strong>
-                    </div>
-                    <div class="progress-bar-bg">
-                      <div class="progress-bar-fill" [style.width.%]="section.progress" [ngClass]="section.cardType"></div>
-                    </div>
+                  <!-- Progress -->
+                  <div class="wsc-progress-row">
+                    <span class="wsc-prog-label">Progress</span>
+                    <span class="wsc-prog-pct">{{ section.progress }}% ({{ section.completed }}/{{ section.total }})</span>
+                  </div>
+                  <div class="wsc-progress-track">
+                    <div class="wsc-progress-fill" [ngClass]="section.cardType" [style.width.%]="section.progress"></div>
                   </div>
 
-                  <!-- Tasks / Deliverables List -->
-                  <div class="deliverables-box mt-3">
-                    <h5 class="deliverables-heading">Activities & Deliverables ({{ section.tasks.length }})</h5>
-                    <div class="tasks-mini-list">
-                      @for (task of section.tasks; track task.id) {
-                        <div class="task-row-item" [ngClass]="{ locked: task.isLocked, completed: task.status === 'COMPLETED' }">
-                          <div class="task-left" (click)="openTaskDetail(task)">
-                            <button class="btn-check-task" type="button" (click)="$event.stopPropagation(); toggleTaskStatus(task)">
+                  <!-- Task List -->
+                  <div class="wsc-tasks-header">
+                    <span>Activities & Deliverables</span>
+                    <span class="wsc-task-count">{{ section.tasks.length }}</span>
+                  </div>
+                  <div class="wsc-task-list">
+                    @for (task of section.tasks; track task.id) {
+                      <div
+                        class="wsc-task-row"
+                        [class.is-completed]="task.status === 'COMPLETED'"
+                        [class.is-locked]="isTaskLocked(task)"
+                        [class.is-progress]="task.status === 'IN_PROGRESS'"
+                        (click)="openTaskDetail(task)"
+                      >
+                        <!-- Top row: check + name + status -->
+                        <div class="wsc-task-top">
+                          <div class="wsc-task-left">
+                            <button
+                              class="wsc-check-btn"
+                              type="button"
+                              [class.completed]="task.status === 'COMPLETED'"
+                              [class.locked]="isTaskLocked(task)"
+                              (click)="$event.stopPropagation(); toggleTaskStatus(task)"
+                            >
                               @if (task.status === 'COMPLETED') { ✅ }
-                              @else if (task.isLocked) { 🔒 }
+                              @else if (isTaskLocked(task)) { 🔒 }
                               @else { ⭕ }
                             </button>
-                            <span class="task-name" [ngClass]="{ 'text-strikethrough': task.status === 'COMPLETED', 'text-muted': task.isLocked }">
+                            <span class="wsc-task-name" [class.strikethrough]="task.status === 'COMPLETED'">
                               {{ task.title }}
                             </span>
                           </div>
-                          <div class="task-right">
-                            @if (task.isLocked) {
-                              <span class="badge badge-warning badge-sm">Locked 🔒</span>
+                          <div class="wsc-task-right">
+                            @if (isTaskLocked(task)) {
+                              <span class="badge badge-sm badge-warning">Locked</span>
                             } @else {
                               <span class="badge badge-sm" [ngClass]="task.status | lowercase">{{ task.status | formatEnum }}</span>
                             }
-                            <span class="task-assignee-tag">👤 {{ getEmployeeName(task.assignedToId) }}</span>
+                            @if (task.assignedToId) {
+                              <span class="wsc-mini-avatar" title="{{ getEmployeeName(task.assignedToId) }}">
+                                {{ getInitials(getEmployeeName(task.assignedToId)) }}
+                              </span>
+                            }
                           </div>
                         </div>
-                      }
-                    </div>
+
+                        <!-- Bottom info row: kya karna hai / kiske paas se lena hai -->
+                        @if (!isTaskLocked(task) && task.status !== 'COMPLETED') {
+                          <div class="wsc-task-hint">
+                            <span class="task-hint-icon">💡</span>
+                            <span>{{ getTaskActionHint(task) }}</span>
+                          </div>
+                        }
+                        @if (isTaskLocked(task)) {
+                          @let prereq = getPrerequisiteInfo(task);
+                          @if (prereq) {
+                            <div class="wsc-task-waiting">
+                              <span class="waiting-icon">⏳</span>
+                              <span>Waiting for <strong>{{ prereq.taskTitle }}</strong></span>
+                              <span class="waiting-sep">·</span>
+                              <span class="waiting-person">👤 {{ prereq.assigneeName }}</span>
+                            </div>
+                          } @else {
+                            <div class="wsc-task-waiting">
+                              <span class="waiting-icon">⏳</span>
+                              <span>Prerequisite task pending</span>
+                            </div>
+                          }
+                        }
+                      </div>
+                    }
                   </div>
+
                 </div>
               }
             </div>
           }
         </div>
+        }
 
-        <!-- Timeline / History Card -->
-        <div class="card detail-card timeline-card">
+        @if (activeTab() === 'timeline') {
+          <!-- ── TIMELINE CARD ───────────────────────────────────── -->
+        <div class="card wf-timeline-card">
           <h3 class="card-title">Workflow Timeline</h3>
           <p class="section-desc">Audit trail of status transitions and assignments</p>
 
-          <div class="timeline-stepper">
+          <div class="wf-timeline">
             @for (event of timeline(); track event.id; let last = $last) {
-              <div class="timeline-step">
-                <div class="step-indicator">
-                  <div class="step-circle"></div>
-                  @if (!last) { <div class="step-line"></div> }
+              <div class="wf-tl-step">
+                <div class="wf-tl-indicator">
+                  <div class="wf-tl-icon">{{ getEventIcon(event.eventType) }}</div>
+                  @if (!last) { <div class="wf-tl-line"></div> }
                 </div>
-                <div class="step-content">
-                  <div class="step-header">
-                    <span class="step-event-type">{{ event.eventType }}</span>
-                    <span class="step-time">{{ event.createdAt | date:'short' }}</span>
+                <div class="wf-tl-content">
+                  <div class="wf-tl-row1">
+                    <span class="wf-tl-event">{{ event.eventType | formatEnum }}</span>
+                    <span class="wf-tl-time">{{ event.createdAt | date:'d MMM, h:mm a' }}</span>
                   </div>
-                  <div class="step-actor">By Employee ID: {{ event.actorId }}</div>
-                  
+                  <div class="wf-tl-actor">by {{ getActorName(event.actorId) }}</div>
                   @if (event.fromStatus || event.toStatus) {
-                    <div class="step-transition">
-                      {{ event.fromStatus || 'PENDING' }} ➔ {{ event.toStatus }}
+                    <div class="wf-tl-transition">
+                      <span class="tl-from">{{ event.fromStatus || 'START' }}</span>
+                      <span class="tl-arrow">→</span>
+                      <span class="tl-to">{{ event.toStatus }}</span>
                     </div>
                   }
-                  
                   @if (event.remarks) {
-                    <div class="step-remarks">"{{ event.remarks }}"</div>
+                    <div class="wf-tl-remarks">"{{ event.remarks }}"</div>
                   }
                 </div>
               </div>
             }
           </div>
         </div>
+        }
       </div>
+
     }
-  </div>
-</div>
+  </div><!-- /wf-main-panel -->
+</div><!-- /workflows-page -->
 
-<!-- Modal: Start Workflow -->
-<app-modal title="Start New Workflow" [visible]="showCreateModal" (close)="showCreateModal = false">
-  <form (ngSubmit)="onCreateWorkflow()">
-    <div class="form-group">
-      <label for="subjectType">Subject Type</label>
-      <select id="subjectType" name="subjectType" [(ngModel)]="newSubjectType">
-        <option value="LEAD">LEAD</option>
-        <option value="CLIENT">CLIENT</option>
-        <option value="PROJECT">PROJECT</option>
-        <option value="TASK">TASK</option>
-      </select>
-    </div>
 
-    <div class="form-group">
-      <label for="subjectId">Record ID / Subject ID</label>
-      <input type="text" id="subjectId" name="subjectId" [(ngModel)]="newSubjectId" placeholder="e.g. cld92kx81s0a" required />
-    </div>
+<!-- ═══════════════════════ MODALS ═══════════════════════════════ -->
 
-    <div class="form-group">
-      <label for="wfTitle">Workflow Title</label>
-      <input type="text" id="wfTitle" name="wfTitle" [(ngModel)]="newTitle" placeholder="e.g. July Reels Design Campaign" required />
-    </div>
-
-    <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" (click)="showCreateModal = false">Cancel</button>
-      <button type="submit" class="btn btn-primary" [disabled]="submitting()">
-        @if (submitting()) { Creating... } @else { Start Workflow }
-      </button>
-    </div>
-  </form>
-</app-modal>
-
-<!-- Modal: Assign / Transfer Workflow -->
+<!-- Modal: Assign / Transfer -->
 <app-modal [title]="isTransfer ? 'Transfer Assignment' : 'Assign Workflow'" [visible]="showAssignModal" (close)="showAssignModal = false">
   <form (ngSubmit)="onAssignSubmit()">
     <div class="form-group">
-      <label for="assignDept">Target Department</label>
+      <label for="assignDept">Department</label>
       <select id="assignDept" name="assignDept" [(ngModel)]="assignDeptId">
         <option value="">Select Department</option>
         @for (dept of departments(); track dept.id) {
@@ -335,12 +548,11 @@
         }
       </select>
     </div>
-
     <div class="form-group">
-      <label for="assignTo">Assign To Employee</label>
+      <label for="assignTo">Assign To</label>
       <select id="assignTo" name="assignTo" [(ngModel)]="assignToId">
         @if (getFilteredEmployees().length === 0) {
-          <option value="">⚠️ No employee available in this department</option>
+          <option value="">⚠️ No employee in this department</option>
         } @else {
           <option value="">Select Employee</option>
           @for (emp of getFilteredEmployees(); track emp.id) {
@@ -349,33 +561,27 @@
         }
       </select>
     </div>
-
     <div class="form-group">
-      <label for="assignRemarks">Remarks / Handover Instructions</label>
-      <textarea id="assignRemarks" name="assignRemarks" [(ngModel)]="assignRemarks" rows="3" placeholder="Brief notes for the assignee..."></textarea>
+      <label for="assignRemarks">Remarks</label>
+      <textarea id="assignRemarks" name="assignRemarks" [(ngModel)]="assignRemarks" rows="3" placeholder="Handover notes..."></textarea>
     </div>
-
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" (click)="showAssignModal = false">Cancel</button>
       <button type="submit" class="btn btn-primary" [disabled]="submitting()">
-        @if (submitting()) { Assigning... } @else { Confirm Assignment }
+        @if (submitting()) { Assigning... } @else { Confirm }
       </button>
     </div>
   </form>
 </app-modal>
 
-<!-- Modal: Action Remarks (Reject / Complete / Approve) -->
+<!-- Modal: Action (Reject / Complete / Approve) -->
 <app-modal [title]="actionType | formatEnum" [visible]="showActionModal" (close)="showActionModal = false">
   <form (ngSubmit)="onActionSubmit()">
-    <p style="margin-bottom:16px; font-size:0.9rem; color:var(--text-secondary);">
-      Are you sure you want to perform this transition? Please add any remarks below.
-    </p>
-
+    <p class="modal-hint">Confirm this action and optionally add remarks below.</p>
     <div class="form-group">
       <label for="actRemarks">Remarks</label>
-      <textarea id="actRemarks" name="actRemarks" [(ngModel)]="actionRemarks" rows="3" placeholder="Add comments here..."></textarea>
+      <textarea id="actRemarks" name="actRemarks" [(ngModel)]="actionRemarks" rows="3" placeholder="Add comments..."></textarea>
     </div>
-
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" (click)="showActionModal = false">Cancel</button>
       <button type="submit" class="btn btn-primary" [disabled]="submitting()">Submit</button>
@@ -386,21 +592,26 @@
 <!-- Modal: Add Custom Task -->
 <app-modal title="Add Custom Task" [visible]="showCustomTaskModal" (close)="showCustomTaskModal = false">
   <form (ngSubmit)="onCreateCustomTask()">
-    <div class="form-group">
-      <label for="customTitle">Task Title</label>
-      <input type="text" id="customTitle" name="customTitle" [(ngModel)]="customTaskTitle" placeholder="e.g. Brochure Design" required />
+    <div class="form-grid">
+      <div class="form-group" style="flex: 2;">
+        <label for="customTitle">Task Title</label>
+        <input type="text" id="customTitle" name="customTitle" [(ngModel)]="customTaskTitle" placeholder="e.g. Brochure Design" required />
+      </div>
+      <div class="form-group" style="flex: 1;">
+        <label for="customCount">Count / Quantity</label>
+        <input type="number" id="customCount" name="customCount" [(ngModel)]="customTaskCount" min="1" max="50" placeholder="1" required />
+      </div>
     </div>
-
     <div class="form-grid">
       <div class="form-group">
-        <label for="customType">Task Type</label>
+        <label for="customType">Type</label>
         <select id="customType" name="customType" [(ngModel)]="customTaskType">
-          <option value="GENERIC">GENERIC</option>
-          <option value="GRAPHIC">GRAPHIC</option>
-          <option value="REEL">REEL</option>
-          <option value="POST">POST</option>
-          <option value="VIDEO">VIDEO</option>
-          <option value="CONTENT">CONTENT</option>
+          <option value="GENERIC">Generic</option>
+          <option value="GRAPHIC">Graphic</option>
+          <option value="REEL">Reel</option>
+          <option value="POST">Post</option>
+          <option value="VIDEO">Video</option>
+          <option value="CONTENT">Content</option>
         </select>
       </div>
       <div class="form-group">
@@ -413,12 +624,11 @@
         </select>
       </div>
     </div>
-
     <div class="form-grid">
       <div class="form-group">
-        <label for="customDept">Department</label>
-        <select id="customDept" name="customDept" [(ngModel)]="customTaskDepartmentId" required>
-          <option value="">Select Department</option>
+        <label for="customDept">Service</label>
+        <select id="customDept" name="customDept" [(ngModel)]="customTaskDepartmentId" (change)="onCustomTaskDeptChange()" required>
+          <option value="">Select Service</option>
           @for (dept of departments(); track dept.id) {
             <option [value]="dept.id">{{ dept.name }}</option>
           }
@@ -428,23 +638,20 @@
         <label for="customAssignee">Employee</label>
         <select id="customAssignee" name="customAssignee" [(ngModel)]="customTaskAssignedToId">
           <option value="">Unassigned</option>
-          @for (emp of employees(); track emp.id) {
-            <option [value]="emp.id">{{ emp.firstName }} {{ emp.lastName || '' }}</option>
+          @for (emp of getFilteredCustomTaskEmployees(); track emp.id) {
+            <option [value]="emp.id">{{ emp.firstName }} {{ emp.lastName || '' }} ({{ emp.designation || 'Staff' }})</option>
           }
         </select>
       </div>
     </div>
-
     <div class="form-group">
       <label for="customDueDate">Due Date</label>
       <input type="date" id="customDueDate" name="customDueDate" [(ngModel)]="customTaskDueDate" />
     </div>
-
     <div class="form-group">
       <label for="customDesc">Description</label>
-      <textarea id="customDesc" name="customDesc" [(ngModel)]="customTaskDescription" rows="3" placeholder="Brief, links, instructions, acceptance criteria..."></textarea>
+      <textarea id="customDesc" name="customDesc" [(ngModel)]="customTaskDescription" rows="3" placeholder="Instructions, links, acceptance criteria..."></textarea>
     </div>
-
     <div class="form-grid">
       <div class="form-group">
         <label for="customAttachName">Attachment Name</label>
@@ -455,7 +662,6 @@
         <input type="text" id="customAttachUrl" name="customAttachUrl" [(ngModel)]="customTaskAttachmentUrl" placeholder="https://..." />
       </div>
     </div>
-
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" (click)="showCustomTaskModal = false">Cancel</button>
       <button type="submit" class="btn btn-primary" [disabled]="submitting()">Add Task</button>
@@ -463,112 +669,164 @@
   </form>
 </app-modal>
 
-<!-- Modal: Task Detail, Comments & Attachments -->
+<!-- Modal: Task Detail -->
 <app-modal [title]="selectedTask()?.title || 'Task Details'" [visible]="showTaskDetailModal" (close)="showTaskDetailModal = false">
   @if (selectedTask()) {
-    <div class="task-detail-modal-body">
-      <!-- Task Meta Header -->
-      <div class="task-detail-meta-box">
-        <div class="meta-row"><span>Type:</span> <span class="task-type-badge">{{ selectedTask().type }}</span></div>
-        <div class="meta-row"><span>Status:</span> <span class="badge" [ngClass]="selectedTask().status | lowercase">{{ selectedTask().status | formatEnum }}</span></div>
-        
-        <div class="meta-row select-assignee-row">
-          <span>Assignee:</span>
-          @if (authService.hasPermission('Task.Assign')) {
-            <select [ngModel]="selectedTask().assignedToId" (ngModelChange)="assignTask($event)" class="task-assignee-select">
-              <option value="">Unassigned</option>
-              @for (emp of employees(); track emp.id) {
-                <option [value]="emp.id">{{ emp.firstName }} {{ emp.lastName || '' }}</option>
-              }
-            </select>
-          } @else {
-            <strong>{{ getEmployeeName(selectedTask().assignedToId) }}</strong>
+    <div class="task-modal-body">
+
+      <!-- Client & Platform Header -->
+      <div class="task-modal-client-bar">
+        <div class="tm-client">
+          <span class="tm-label">CLIENT:</span>
+          <strong>{{ getClientName(selectedWorkflow()) }}</strong>
+        </div>
+        <div class="tm-platform">
+          <span class="platform-chip" [style.border-color]="getTaskPlatform(selectedTask()).color">
+            <span>{{ getTaskPlatform(selectedTask()).icon }}</span>
+            <span>{{ getTaskPlatform(selectedTask()).name }}</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Meta pills -->
+      <div class="task-meta-pills">
+        <span class="task-type-badge">{{ selectedTask().type }}</span>
+        <span class="badge" [ngClass]="selectedTask().status | lowercase">{{ selectedTask().status | formatEnum }}</span>
+        @if (selectedTask().isLocked) { <span class="badge badge-warning">🔒 Locked</span> }
+        @if (selectedTask().priority) { <span class="priority-badge" [ngClass]="selectedTask().priority | lowercase">{{ selectedTask().priority }}</span> }
+        <span class="task-due-chip">
+          📅 Due: {{ getCalculatedTaskDueDate(selectedTask(), selectedWorkflow()) | date:'d MMM yyyy' }}
+        </span>
+      </div>
+
+      <!-- Team Coordination Pipeline -->
+      <div class="team-coordination-section">
+        <h4 class="task-section-title">🤝 Team Coordination Workflow</h4>
+        <div class="pipeline-steps">
+          @for (step of getTeamCoordinationSteps(selectedTask()); track step.role) {
+            <div class="pipeline-step" [class.current]="step.isCurrent">
+              <div class="step-role">{{ step.role }}</div>
+              <div class="step-person">{{ step.name }}</div>
+              <div class="step-status">{{ step.status }}</div>
+            </div>
           }
         </div>
       </div>
 
-      <!-- Task Status Action Buttons for Employee -->
-      <div class="task-status-actions mt-3 mb-3 p-2 border-top border-bottom d-flex gap-2 align-items-center">
-        <span class="label font-bold me-2">Update Status:</span>
-        @if (selectedTask().isLocked) {
-          <span class="badge badge-warning">🔒 Locked (Prerequisites Pending)</span>
+      <!-- Deliverable Checklist & Readiness -->
+      <div class="readiness-checklist">
+        <div class="chk-item" [class.ready]="selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED'">
+          <span>Caption</span>
+          <strong>{{ (selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED') ? 'Ready ✅' : 'In Progress ⏳' }}</strong>
+        </div>
+        <div class="chk-item" [class.ready]="selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED'">
+          <span>Design / Video</span>
+          <strong>{{ (selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED') ? 'Ready ✅' : 'In Progress ⏳' }}</strong>
+        </div>
+        <div class="chk-item" [class.ready]="selectedTask().status === 'APPROVED'">
+          <span>Admin Approval</span>
+          <strong>{{ selectedTask().status === 'APPROVED' ? 'Approved ✅' : 'Pending ⏳' }}</strong>
+        </div>
+      </div>
+
+      <!-- Assignee row -->
+      <div class="task-assignee-row">
+        <span class="task-label">Assignee</span>
+        @if (authService.hasPermission('Task.Assign')) {
+          <select [ngModel]="selectedTask().assignedToId" (ngModelChange)="assignTask($event)" class="task-assignee-select">
+            <option value="">Unassigned</option>
+            @for (emp of employees(); track emp.id) {
+              <option [value]="emp.id">{{ emp.firstName }} {{ emp.lastName || '' }}</option>
+            }
+          </select>
         } @else {
-          @if (selectedTask().status === 'PENDING' || selectedTask().status === 'ASSIGNED') {
-            <button class="btn btn-sm btn-success" type="button" (click)="updateTaskStatusFromModal('IN_PROGRESS')">⚡ Accept & Start Task</button>
-          }
-          @if (selectedTask().status === 'IN_PROGRESS' || selectedTask().status === 'ASSIGNED') {
-            <button class="btn btn-sm btn-primary" type="button" (click)="updateTaskStatusFromModal('COMPLETED')">✅ Complete Task</button>
-            <button class="btn btn-sm btn-warning" type="button" (click)="updateTaskStatusFromModal('REVISION')">🔄 Request Revision</button>
-          }
-          @if (selectedTask().status === 'COMPLETED') {
-            <span class="text-success font-bold me-2">✅ Task Completed</span>
-            <button class="btn btn-sm btn-secondary" type="button" (click)="updateTaskStatusFromModal('IN_PROGRESS')">Re-open Task</button>
-          }
+          <strong>{{ getEmployeeName(selectedTask().assignedToId) }}</strong>
         }
       </div>
 
-      <!-- Comments Section -->
-      <div class="task-collab-section">
-        <h4>Discussion ({{ selectedTask().comments?.length || 0 }})</h4>
-        
-        <div class="comments-list">
-          @for (c of selectedTask().comments; track c.id) {
-            <div class="comment-bubble">
-              <div class="comment-header">
-                <span class="comment-author">{{ getEmployeeName(c.authorId) }}</span>
-                <span class="comment-time">{{ c.createdAt | date:'short' }}</span>
-              </div>
-              <div class="comment-content">{{ c.content }}</div>
-            </div>
+      <!-- Status Actions -->
+      <div class="task-status-actions">
+        <span class="task-label">Update Status</span>
+        <div class="task-action-btns">
+          @if (selectedTask().isLocked) {
+            <span class="badge badge-warning">🔒 Prerequisites Pending</span>
+          } @else {
+            @if (selectedTask().status === 'PENDING' || selectedTask().status === 'ASSIGNED') {
+              <button class="btn btn-sm btn-success" type="button" (click)="updateTaskStatusFromModal('IN_PROGRESS')">⚡ Start Task</button>
+            }
+            @if (selectedTask().status === 'IN_PROGRESS' || selectedTask().status === 'ASSIGNED') {
+              @if (selectedTask().type === 'CONTENT') {
+                <button class="btn btn-sm btn-info" type="button" (click)="updateTaskStatusFromModal('APPROVED')">👍 Client Approved</button>
+              } @else {
+                <button class="btn btn-sm btn-primary" type="button" (click)="updateTaskStatusFromModal('COMPLETED')">✅ Mark Complete</button>
+              }
+              <button class="btn btn-sm btn-warning" type="button" (click)="updateTaskStatusFromModal('REVISION')">🔄 Revision</button>
+            }
+            @if (selectedTask().status === 'APPROVED') {
+              <button class="btn btn-sm btn-primary" type="button" (click)="updateTaskStatusFromModal('COMPLETED')">✅ Post & Complete</button>
+              <button class="btn btn-sm btn-warning" type="button" (click)="updateTaskStatusFromModal('REVISION')">🔄 Revision</button>
+            }
+            @if (selectedTask().status === 'COMPLETED') {
+              <span class="text-success font-bold">✅ Completed</span>
+              <button class="btn btn-sm btn-secondary" type="button" (click)="updateTaskStatusFromModal('IN_PROGRESS')">Re-open</button>
+            }
           }
+        </div>
+      </div>
+
+      <!-- Comments -->
+      <div class="task-section">
+        <h4 class="task-section-title">💬 Discussion ({{ selectedTask().comments?.length || 0 }})</h4>
+        <div class="task-comments-list">
           @if (!selectedTask().comments || selectedTask().comments.length === 0) {
-            <p class="text-muted italic text-center p-2" style="font-size:0.82rem;">No comments yet. Start the conversation!</p>
+            <p class="task-empty-hint">No comments yet. Start the conversation!</p>
+          }
+          @for (c of selectedTask().comments; track c.id) {
+            <div class="task-comment">
+              <div class="task-comment-head">
+                <span class="task-comment-author">{{ getEmployeeName(c.authorId) }}</span>
+                <span class="task-comment-time">{{ c.createdAt | date:'d MMM, h:mm a' }}</span>
+              </div>
+              <div class="task-comment-body">{{ c.content }}</div>
+            </div>
           }
         </div>
-
         @if (authService.hasPermission('Task.Comment')) {
-          <div class="comment-form form-group mt-2">
+          <div class="task-comment-form">
             <textarea [(ngModel)]="newComment" rows="2" placeholder="Write a comment..."></textarea>
-            <button class="btn btn-primary btn-sm mt-2 float-right" (click)="addComment()" [disabled]="!newComment">Add Comment</button>
+            <button class="btn btn-primary btn-sm" (click)="addComment()" [disabled]="!newComment">Post</button>
           </div>
         }
       </div>
 
-      <!-- Attachments Section -->
-      <div class="task-collab-section mt-4">
-        <h4>Attachments ({{ selectedTask().attachments?.length || 0 }})</h4>
-        
-        <div class="attachments-list">
-          @for (a of selectedTask().attachments; track a.id) {
-            <div class="attachment-item">
-              <span class="attach-icon">📎</span>
-              <a [href]="a.fileUrl" target="_blank" class="attachment-link">{{ a.fileName }}</a>
-              <span class="attach-meta">by {{ getEmployeeName(a.uploadedById) }}</span>
-            </div>
-          }
+      <!-- Attachments -->
+      <div class="task-section">
+        <h4 class="task-section-title">📎 Attachments ({{ selectedTask().attachments?.length || 0 }})</h4>
+        <div class="task-attachments-list">
           @if (!selectedTask().attachments || selectedTask().attachments.length === 0) {
-            <p class="text-muted italic text-center p-2" style="font-size:0.82rem;">No attachments added.</p>
+            <p class="task-empty-hint">No attachments yet.</p>
+          }
+          @for (a of selectedTask().attachments; track a.id) {
+            <div class="task-attach-item">
+              <span>📄</span>
+              <a [href]="a.fileUrl" target="_blank" class="attach-link">{{ a.fileName }}</a>
+              <span class="attach-by">by {{ getEmployeeName(a.uploadedById) }}</span>
+            </div>
           }
         </div>
-
         @if (authService.hasPermission('Task.Attach')) {
-          <div class="attachment-form mt-2 p-2 card">
-            <div class="form-grid">
-              <div class="form-group">
-                <label>File Name</label>
-                <input type="text" [(ngModel)]="newAttachmentName" placeholder="e.g. Design Asset V1" />
-              </div>
-              <div class="form-group">
-                <label>File URL</label>
-                <input type="text" [(ngModel)]="newAttachmentUrl" placeholder="https://drive.google.com/..." />
-              </div>
+          <div class="task-attach-form form-grid">
+            <div class="form-group">
+              <input type="text" [(ngModel)]="newAttachmentName" placeholder="File name" />
             </div>
-            <button class="btn btn-secondary btn-sm" (click)="addAttachment()" [disabled]="!newAttachmentName || !newAttachmentUrl">
-              Attach Link
-            </button>
+            <div class="form-group">
+              <input type="text" [(ngModel)]="newAttachmentUrl" placeholder="https://drive.google.com/..." />
+            </div>
+            <button class="btn btn-secondary btn-sm" (click)="addAttachment()" [disabled]="!newAttachmentName || !newAttachmentUrl">Attach</button>
           </div>
         }
       </div>
+
     </div>
   }
 </app-modal>
