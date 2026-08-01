@@ -1,12 +1,18 @@
 import { Injectable } from "@nestjs/common";
 import { NotificationRepository } from "../repositories/notification.repository";
+import { AppGateway } from "../../../core/gateway/app.gateway";
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly repo: NotificationRepository) {}
+  constructor(
+    private readonly repo: NotificationRepository,
+    private readonly gateway: AppGateway,
+  ) {}
 
   async notify(companyId: string, userId: string, title: string, message: string) {
-    return this.repo.create(companyId, userId, title, message);
+    const notification = await this.repo.create(companyId, userId, title, message);
+    this.gateway.emitToUser(userId, 'new_notification', notification);
+    return notification;
   }
 
   async findAll(companyId: string, userId: string) {

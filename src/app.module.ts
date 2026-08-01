@@ -11,6 +11,7 @@ import { ClientModule } from "./modules/clients/client.module";
 import { ActivityModule } from "./modules/activity/activity.module";
 import { NotificationModule } from "./modules/notifications/notification.module";
 import { ServiceCatalogModule } from "./modules/services/service-catalog.module";
+import { GatewayModule } from "./core/gateway/gateway.module";
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ServiceCatalogModule } from "./modules/services/service-catalog.module"
     ActivityModule,
     NotificationModule,
     ServiceCatalogModule,
+    GatewayModule,
   ],
 })
 export class AppModule {}

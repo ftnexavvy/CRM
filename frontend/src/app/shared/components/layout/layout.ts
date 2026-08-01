@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ChatService } from '../../../core/services/chat.service';
 import { ActivityService } from '../../../core/services/activity.service';
+import { SocketService } from '../../../core/services/socket.service';
 import { playNotificationSound } from '../../../core/utils/audio.util';
 
 @Component({
@@ -19,6 +20,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private readonly notificationService = inject(NotificationService);
   private readonly chatService = inject(ChatService);
   private readonly activityService = inject(ActivityService);
+  private readonly socketService = inject(SocketService);
   private readonly router = inject(Router);
 
   protected readonly currentUser = this.authService.currentUser;
@@ -40,23 +42,34 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private pollingTimer: any;
 
   ngOnInit(): void {
-    this.startPolling();
+    this.fetchData();
+    
+    // Connect to WebSocket
+    this.socketService.connect();
+
+    // Subscribe to real-time events
+    this.socketService.onEvent<any>('new_notification').subscribe(notification => {
+      this.notifications.update(n => [notification, ...n]);
+      playNotificationSound();
+    });
+
+    this.socketService.onEvent<any>('new_message').subscribe(message => {
+      this.chatMessages.update(m => [...m, message]);
+      if (message.senderId !== this.currentUser()?.id) {
+        playNotificationSound();
+      }
+      if (this.chatExpanded()) {
+        setTimeout(() => this.scrollChatToBottom(), 50);
+      }
+    });
+
+    this.socketService.onEvent<any>('new_activity').subscribe(activity => {
+      this.adminLogs.update(logs => [activity, ...logs].slice(0, 10));
+    });
   }
 
   ngOnDestroy(): void {
-    if (this.pollingTimer) {
-      clearInterval(this.pollingTimer);
-    }
-  }
-
-  private startPolling(): void {
-    // Initial fetch
-    this.fetchData();
-
-    // Poll every 4 seconds
-    this.pollingTimer = setInterval(() => {
-      this.fetchData();
-    }, 4000);
+    this.socketService.disconnect();
   }
 
   private fetchData(): void {
@@ -111,6 +124,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
   toggleNotificationDropdown(event: Event): void {
     event.stopPropagation();
     this.showNotificationDropdown.set(!this.showNotificationDropdown());
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (this.showNotificationDropdown()) {
+      this.showNotificationDropdown.set(false);
+    }
   }
 
   markAllAsRead(): void {

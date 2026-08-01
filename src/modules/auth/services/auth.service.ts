@@ -137,4 +137,16 @@ export class AuthService {
       },
     };
   }
+
+  async verifyAccessToken(token: string): Promise<AuthUserEntity | null> {
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+      const user = await this.authRepository.findById(payload.sub);
+      if (!user) return null;
+      this.assertActive(user);
+      return this.toUserEntity(user);
+    } catch {
+      return null;
+    }
+  }
 }
