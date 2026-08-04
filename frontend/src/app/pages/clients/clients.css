@@ -382,14 +382,6 @@ tbody tr.active td {
   padding-top: 20px;
 }
 
-padding: var(--space-4);
-font-size: 13px;
-color: var(--text-sub);
-line-height: 1.5;
-white-space: pre-wrap;
-flex: 1;
-}
-
 .w-full {
   width: 100%;
 }

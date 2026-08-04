@@ -274,11 +274,12 @@
   margin-top: 24px;
 }
 
-background: var(--bg-subtle);
-border: 1px solid var(--border);
-border-radius: var(--r-lg);
-padding: var(--space-4);
-position: relative;
+.deck-card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--space-4);
+  position: relative;
 }
 
 .delete-ann-btn {

@@ -555,8 +555,9 @@ tbody tr.active td {
   margin-left: 16px;
 }
 
-padding: 4px 24px 4px 8px;
-font-size: 12px;
+.pageSize-select {
+  padding: 4px 24px 4px 8px;
+  font-size: 12px;
 }
 
 .leads-pagination-controls {
