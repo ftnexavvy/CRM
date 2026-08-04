@@ -5,8 +5,8 @@
 
     <div class="wf-sidebar-header">
       <div>
-        <h2 class="wf-sidebar-title">Workflows</h2>
-        <span class="auto-pill">Auto Workflow</span>
+        <h2 class="wf-sidebar-title">Tasks</h2>
+        <span class="auto-pill">Auto Tasks</span>
       </div>
     </div>
 
@@ -38,7 +38,7 @@
         <input
           class="wf-search-input"
           type="text"
-          placeholder="Search workflows..."
+          placeholder="Search tasks..."
           [(ngModel)]="workflowSearchQuery"
         />
       </div>
@@ -64,7 +64,7 @@
               <span class="wf-subject-pill">{{ wf.subjectType }}</span>
               <span class="badge" [ngClass]="wf.status | lowercase">{{ wf.status | formatEnum }}</span>
             </div>
-            <div class="wf-item-title">{{ wf.title }}</div>
+            <div class="wf-item-title">{{ cleanTitle(wf.title) }}</div>
             <div class="wf-item-date">Updated {{ wf.updatedAt | date:'d MMM, h:mm a' }}</div>
           </div>
         }
@@ -96,7 +96,7 @@
               <span class="client-label">CLIENT:</span>
               <strong class="client-name-str">{{ getClientName(selectedWorkflow()) }}</strong>
             </div>
-            <h2 class="wf-header-title">{{ selectedWorkflow().title }}</h2>
+            <h2 class="wf-header-title">{{ cleanTitle(selectedWorkflow().title) }}</h2>
           </div>
           <div class="wf-header-right">
             <span class="badge badge-lg" [ngClass]="selectedWorkflow().status | lowercase">
@@ -111,13 +111,9 @@
               <button class="btn btn-primary btn-sm" (click)="openCustomTaskModal()">+ Add Task</button>
             }
 
-            <!-- Workflow-level Accept / Reject — only for the assigned dept lead -->
+            <!-- Workflow-level Complete Action — for assigned user -->
             @if (isWorkflowAssignee()) {
-              @if (selectedWorkflow().assignments?.[0]?.status === 'ASSIGNED') {
-                <button class="btn btn-success btn-sm" (click)="acceptWorkflow()">✔ Accept Work</button>
-                <button class="btn btn-danger btn-sm" (click)="openActionModal('reject')">✖ Reject</button>
-              }
-              @if (selectedWorkflow().assignments?.[0]?.status === 'ACCEPTED') {
+              @if (selectedWorkflow().assignments?.[0]?.status === 'ASSIGNED' || selectedWorkflow().assignments?.[0]?.status === 'ACCEPTED') {
                 <button class="btn btn-primary btn-sm" (click)="openActionModal('complete')">🏁 Complete & Review</button>
               }
             }
@@ -254,7 +250,7 @@
              <!-- PROGRESS -->
              <div class="priority-col" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: var(--text-color);">Overall Progress</div>
-               <div style="width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(var(--primary-color) {{ getCampaignMetrics().progressPercent }}%, var(--border-color) 0); display: flex; justify-content: center; align-items: center; position: relative;">
+               <div style="width: 100px; height: 100px; border-radius: 50%; display: flex; justify-content: center; align-items: center; position: relative;" [style.background]="'conic-gradient(var(--primary-color) ' + getCampaignMetrics().progressPercent + '%, var(--border-color) 0)'">
                   <div style="width: 80px; height: 80px; background: var(--bg-color); border-radius: 50%; position: absolute; top: 10px; left: 10px;"></div>
                   <strong style="position: relative; z-index: 2; font-size: 1.2rem;">{{ getCampaignMetrics().progressPercent }}%</strong>
                </div>
@@ -510,7 +506,19 @@
                     <span class="wf-tl-event">{{ event.eventType | formatEnum }}</span>
                     <span class="wf-tl-time">{{ event.createdAt | date:'d MMM, h:mm a' }}</span>
                   </div>
-                  <div class="wf-tl-actor">by {{ getActorName(event.actorId) }}</div>
+                  <div class="wf-tl-actor">by {{ event.actor ? (event.actor.firstName + ' ' + (event.actor.lastName || '')) : getActorName(event.actorId) }}</div>
+                  @if (event.toUser || event.toUserId) {
+                    <div class="wf-tl-assignee" style="color: #6366f1; font-weight: 600; margin-top: 4px; font-size: 0.88rem;">
+                      🎯 Assigned To: {{ event.toUser ? (event.toUser.firstName + ' ' + (event.toUser.lastName || '')) : getEmployeeName(event.toUserId) }}
+                      @if (event.department || event.departmentId) {
+                        <span style="color: #64748b; font-weight: normal;">({{ event.department?.name || getDepartmentName(event.departmentId) }})</span>
+                      }
+                    </div>
+                  } @else if (event.department || event.departmentId) {
+                    <div class="wf-tl-assignee" style="color: #64748b; font-weight: 500; margin-top: 4px; font-size: 0.88rem;">
+                      🏢 Department: {{ event.department?.name || getDepartmentName(event.departmentId) }}
+                    </div>
+                  }
                   @if (event.fromStatus || event.toStatus) {
                     <div class="wf-tl-transition">
                       <span class="tl-from">{{ event.fromStatus || 'START' }}</span>
@@ -697,6 +705,11 @@
         <span class="task-due-chip">
           📅 Due: {{ getCalculatedTaskDueDate(selectedTask(), selectedWorkflow()) | date:'d MMM yyyy' }}
         </span>
+        @if (selectedTask().status === 'COMPLETED' || selectedTask().completedAt) {
+          <span class="task-due-chip" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; font-weight: 600;">
+            🚀 Published / Completed on: {{ (selectedTask().completedAt || selectedTask().updatedAt) | date:'d MMM yyyy, h:mm a' }}
+          </span>
+        }
       </div>
 
       <!-- Team Coordination Pipeline -->
@@ -715,17 +728,17 @@
 
       <!-- Deliverable Checklist & Readiness -->
       <div class="readiness-checklist">
-        <div class="chk-item" [class.ready]="selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED'">
+        <div class="chk-item" [class.ready]="selectedTask().type === 'CONTENT' ? !selectedTask().isLocked : (selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED')">
           <span>Caption</span>
-          <strong>{{ (selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED') ? 'Ready ✅' : 'In Progress ⏳' }}</strong>
+          <strong>{{ (selectedTask().type === 'CONTENT' ? !selectedTask().isLocked : (selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED')) ? 'Ready ✅' : 'In Progress ⏳' }}</strong>
         </div>
-        <div class="chk-item" [class.ready]="selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED'">
+        <div class="chk-item" [class.ready]="selectedTask().type === 'CONTENT' ? !selectedTask().isLocked : (selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED')">
           <span>Design / Video</span>
-          <strong>{{ (selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED') ? 'Ready ✅' : 'In Progress ⏳' }}</strong>
+          <strong>{{ (selectedTask().type === 'CONTENT' ? !selectedTask().isLocked : (selectedTask().status === 'COMPLETED' || selectedTask().status === 'APPROVED')) ? 'Ready ✅' : 'In Progress ⏳' }}</strong>
         </div>
-        <div class="chk-item" [class.ready]="selectedTask().status === 'APPROVED'">
-          <span>Admin Approval</span>
-          <strong>{{ selectedTask().status === 'APPROVED' ? 'Approved ✅' : 'Pending ⏳' }}</strong>
+        <div class="chk-item" [class.ready]="selectedTask().status === 'APPROVED' || selectedTask().status === 'COMPLETED'">
+          <span>Client Approval</span>
+          <strong>{{ (selectedTask().status === 'APPROVED' || selectedTask().status === 'COMPLETED') ? 'Approved ✅' : 'Pending ⏳' }}</strong>
         </div>
       </div>
 
@@ -743,6 +756,26 @@
           <strong>{{ getEmployeeName(selectedTask().assignedToId) }}</strong>
         }
       </div>
+
+      <!-- Published Platforms (For Content tasks when completing) -->
+      @if (selectedTask().type === 'CONTENT' && !selectedTask().isLocked && (selectedTask().status === 'APPROVED' || selectedTask().status === 'IN_PROGRESS' || selectedTask().status === 'COMPLETED')) {
+        <div class="task-platforms-section" style="margin-bottom: 20px; padding: 15px; background: var(--bg-color-alt, #f8fafc); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="task-label" style="font-weight: 600; margin-bottom: 0;">PUBLISHED PLATFORMS (SELECT WHERE POSTED)</span>
+            <button type="button" class="btn btn-xs btn-outline" (click)="selectAllPlatforms()" style="padding: 3px 10px; font-size: 0.8rem; border-radius: 12px;">
+              {{ selectedPlatforms.length === AVAILABLE_PLATFORMS.length ? 'Deselect All' : 'Select All' }}
+            </button>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            @for (platform of AVAILABLE_PLATFORMS; track platform) {
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: white; border: 1px solid var(--border-color); border-radius: 20px; font-size: 0.9rem;">
+                <input type="checkbox" [checked]="selectedPlatforms.includes(platform)" (change)="togglePlatform(platform)">
+                {{ platform }}
+              </label>
+            }
+          </div>
+        </div>
+      }
 
       <!-- Status Actions -->
       <div class="task-status-actions">

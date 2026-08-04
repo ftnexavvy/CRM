@@ -34,6 +34,94 @@ export class ClientsComponent implements OnInit {
   // Selected client for details
   selectedClient = signal<any>(null);
 
+  maskPhone(phone: string | null | undefined): string {
+    if (!phone) return 'Not Provided';
+    if (this.authService.isAdminUser()) return phone;
+    const trimmed = phone.trim();
+    if (trimmed.length <= 4) return trimmed;
+    const first2 = trimmed.substring(0, 2);
+    const last2 = trimmed.substring(trimmed.length - 2);
+    const masked = '*'.repeat(Math.max(4, trimmed.length - 4));
+    return `${first2}${masked}${last2}`;
+  }
+
+  maskEmail(email: string | null | undefined): string {
+    if (!email) return 'N/A';
+    if (this.authService.isAdminUser()) return email;
+    const parts = email.split('@');
+    if (parts.length < 2) {
+      if (email.length <= 4) return email;
+      return `${email.substring(0, 2)}${'*'.repeat(email.length - 4)}${email.substring(email.length - 2)}`;
+    }
+    const [user, domain] = parts;
+    const maskedUser = user.length <= 4
+      ? user[0] + '*'.repeat(Math.max(1, user.length - 1))
+      : `${user.substring(0, 2)}${'*'.repeat(user.length - 4)}${user.substring(user.length - 2)}`;
+    return `${maskedUser}@${domain}`;
+  }
+
+  // Pause Services Modal state
+  showPauseModal = false;
+  pauseDaysVal = 10;
+  pauseReasonVal = '';
+
+  openPauseModal(): void {
+    this.pauseDaysVal = 10;
+    this.pauseReasonVal = '';
+    this.showPauseModal = true;
+  }
+
+  onPauseSubmit(): void {
+    const client = this.selectedClient();
+    if (!client) return;
+
+    if (!this.pauseDaysVal || this.pauseDaysVal < 1) {
+      this.toast.warning('Please enter valid pause days (e.g. 10)');
+      return;
+    }
+
+    this.submitting.set(true);
+    this.clientService.pause(client.id, this.pauseDaysVal, this.pauseReasonVal).subscribe({
+      next: (res) => {
+        this.toast.success(`Services paused for ${this.pauseDaysVal} days. Billing cycle extended.`);
+        this.showPauseModal = false;
+        this.submitting.set(false);
+        this.selectedClient.set(res.data);
+        this.loadClients();
+      },
+      error: (err) => {
+        this.submitting.set(false);
+        this.toast.error(err.error?.message || 'Failed to pause client services');
+      }
+    });
+  }
+
+  onResumeServices(): void {
+    const client = this.selectedClient();
+    if (!client) return;
+    if (!confirm(`Are you sure you want to resume active services for ${client.name}?`)) return;
+
+    this.submitting.set(true);
+    this.clientService.resume(client.id).subscribe({
+      next: (res) => {
+        this.toast.success('Services resumed successfully!');
+        this.submitting.set(false);
+        this.selectedClient.set(res.data);
+        this.loadClients();
+      },
+      error: (err) => {
+        this.submitting.set(false);
+        this.toast.error(err.error?.message || 'Failed to resume client services');
+      }
+    });
+  }
+
+  getNextBillingDate(client: any): Date {
+    if (client?.nextBillingDate) return new Date(client.nextBillingDate);
+    const created = new Date(client?.createdAt || Date.now());
+    return new Date(created.getTime() + 30 * 86400000);
+  }
+
   // Create Client Form fields
   showCreateModal = false;
   newName = '';

@@ -98,4 +98,73 @@ export class ClientService {
     await this.findOne(companyId, id);
     return this.clientRepo.delete(companyId, id);
   }
+
+  async pause(companyId: string, actorId: string, id: string, dto: { pauseDays: number; reason?: string }) {
+    const client = await this.findOne(companyId, id);
+    const pauseDays = Math.max(1, dto.pauseDays || 1);
+
+    const currentBilling = client.nextBillingDate
+      ? new Date(client.nextBillingDate)
+      : new Date(new Date(client.createdAt).getTime() + 30 * 86400000);
+    const newBilling = new Date(currentBilling.getTime() + pauseDays * 86400000);
+
+    const updated = await this.prisma.client.update({
+      where: { id },
+      data: {
+        status: "PAUSED",
+        pausedAt: new Date(),
+        pauseDays: (client.pauseDays || 0) + pauseDays,
+        pauseReason: dto.reason || "Client requested service pause",
+        nextBillingDate: newBilling,
+      },
+      include: { services: { include: { service: true } } },
+    });
+
+    const workflow = await this.prisma.workflow.findFirst({
+      where: { companyId, subjectType: "CLIENT", subjectId: id },
+      include: { tasks: { where: { status: { in: ["PENDING", "ASSIGNED", "IN_PROGRESS"] } } } },
+    });
+
+    if (workflow && workflow.tasks.length > 0) {
+      for (const task of workflow.tasks) {
+        if (task.dueDate) {
+          const shiftedDue = new Date(new Date(task.dueDate).getTime() + pauseDays * 86400000);
+          await this.prisma.task.update({
+            where: { id: task.id },
+            data: { dueDate: shiftedDue },
+          });
+        }
+      }
+    }
+
+    await this.activityService.log(
+      companyId,
+      actorId,
+      "client_services_paused",
+      `Paused services for client '${client.name}' for ${pauseDays} days. Billing cycle extended to ${newBilling.toLocaleDateString()}. Reason: ${dto.reason || 'N/A'}`
+    );
+
+    return updated;
+  }
+
+  async resume(companyId: string, actorId: string, id: string) {
+    const client = await this.findOne(companyId, id);
+    const updated = await this.prisma.client.update({
+      where: { id },
+      data: {
+        status: "ACTIVE",
+        pausedAt: null,
+      },
+      include: { services: { include: { service: true } } },
+    });
+
+    await this.activityService.log(
+      companyId,
+      actorId,
+      "client_services_resumed",
+      `Resumed active services for client '${client.name}'`
+    );
+
+    return updated;
+  }
 }

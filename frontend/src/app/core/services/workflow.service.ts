@@ -94,7 +94,12 @@ export class WorkflowService {
     return this.http.post<any>(`/api/v1/tasks/${taskId}/attachments`, attachment);
   }
 
-  updateTaskStatus(taskId: string, status: string): Observable<any> {
-    return this.http.post<any>(`/api/v1/tasks/${taskId}/status`, { status });
+  updateTaskStatus(taskId: string, payload: { status: string, publishedPlatforms?: string[] }): Observable<any> {
+    return this.http.post<any>(`/api/v1/tasks/${taskId}/status`, payload);
+  }
+
+  getPosts(): Observable<any> {
+    return this.http.get<any>(`/api/v1/tasks/posts`);
   }
 }
+

@@ -9,6 +9,7 @@ import { PermissionRepository } from "../permission/repositories/permission.repo
 import { PermissionService } from "../permission/services/permission.service";
 import { PermissionController } from "../permission/controllers/permission.controller";
 import { PermissionsGuard } from "./guards/permissions.guard";
+import { PrismaService } from "../../core/prisma/prisma.service";
 
-@Module({ controllers: [UserController, RoleController, PermissionController], providers: [UserService, UserRepository, RoleService, RoleRepository, PermissionService, PermissionRepository, PermissionsGuard], exports: [PermissionsGuard] })
+@Module({ controllers: [UserController, RoleController, PermissionController], providers: [UserService, UserRepository, RoleService, RoleRepository, PermissionService, PermissionRepository, PermissionsGuard, PrismaService], exports: [PermissionsGuard] })
 export class UserModule {}

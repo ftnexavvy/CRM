@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../../core/prisma/prisma.service";
-import { AssignTaskDto, CreateCustomTaskDto, CreateTaskAttachmentDto, CreateTaskCommentDto } from "../dto/workflow.dto";
+import { AssignTaskDto, CreateCustomTaskDto, CreateTaskAttachmentDto, CreateTaskCommentDto, UpdateTaskStatusDto } from "../dto/workflow.dto";
 import { ActivityService } from "../../activity/services/activity.service";
 import { NotificationService } from "../../notifications/services/notification.service";
 
@@ -126,8 +126,9 @@ export class TaskService {
     return attachment;
   }
 
-  async updateStatus(companyId: string, actorId: string, taskId: string, status: any) {
+  async updateStatus(companyId: string, actorId: string, taskId: string, dto: UpdateTaskStatusDto) {
     const task = await this.required(companyId, taskId);
+    const status = dto.status as any;
     if (task.isLocked && status === "COMPLETED") {
       throw new Error("Cannot complete a locked task until prerequisite tasks are finished.");
     }
@@ -135,7 +136,8 @@ export class TaskService {
       where: { id: taskId },
       data: {
         status,
-        completedAt: status === "COMPLETED" ? new Date() : undefined
+        completedAt: status === "COMPLETED" ? new Date() : undefined,
+        publishedPlatforms: dto.publishedPlatforms || undefined
       }
     });
 
@@ -200,5 +202,59 @@ export class TaskService {
     const task = await this.prisma.task.findFirst({ where: { id, companyId } });
     if (!task) throw new NotFoundException("Task not found");
     return task;
+  }
+
+  async getPostsByDate(companyId: string) {
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        companyId,
+        workflow: {
+          subjectType: "CLIENT",
+        },
+        OR: [
+          { type: { in: ['CONTENT', 'POST', 'REEL', 'GRAPHIC'] } },
+          { title: { contains: 'Post' } },
+          { title: { contains: 'Reel' } },
+          { title: { contains: 'Carousel' } },
+          { title: { contains: 'Story' } }
+        ]
+      },
+      include: {
+        workflow: true,
+        assignedTo: {
+          select: { id: true, firstName: true, lastName: true, profileImage: true }
+        },
+        attachments: true,
+        comments: {
+          orderBy: { createdAt: 'asc' }
+        }
+      },
+      orderBy: {
+        dueDate: 'asc'
+      }
+    });
+
+    const clientIds = [...new Set(tasks.map(t => t.workflow.subjectId))];
+    const clients = await this.prisma.client.findMany({
+      where: {
+        id: { in: clientIds },
+        companyId
+      },
+      select: { id: true, name: true, email: true, phone: true, services: { include: { service: true } } }
+    });
+
+    const clientMap = new Map(clients.map(c => [c.id, c]));
+
+    return tasks.map(task => {
+      const client = clientMap.get(task.workflow.subjectId);
+      const cId = client ? client.id : task.workflow.subjectId;
+      const cName = client ? client.name : task.workflow.title.replace(/^Client Tasks - /i, '');
+      return {
+        ...task,
+        clientId: cId || 'client-default',
+        clientName: cName || 'Client',
+        clientServices: client ? client.services : []
+      };
+    });
   }
 }

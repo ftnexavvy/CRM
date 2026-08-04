@@ -40,6 +40,9 @@ export class WorkflowsComponent implements OnInit {
   timeline = signal<any[]>([]);
   activeTab = signal<'dashboard' | 'tasks' | 'timeline'>('dashboard');
 
+  AVAILABLE_PLATFORMS = ['Facebook', 'Instagram', 'LinkedIn', 'YouTube', 'X (Twitter)', 'Pinterest'];
+  selectedPlatforms: string[] = [];
+
   // Create workflow modal form
   showCreateModal = false;
   newSubjectType = 'LEAD';
@@ -405,6 +408,11 @@ export class WorkflowsComponent implements OnInit {
     return { start, end, formattedRange, daysLeft };
   }
 
+  cleanTitle(title: string | null | undefined): string {
+    if (!title) return '';
+    return title.replace(/Client Onboarding/gi, 'Client Tasks');
+  }
+
   // Get Task Due Date directly from backend
   getCalculatedTaskDueDate(task: any, wf: any): Date | null {
     if (task?.dueDate) return new Date(task.dueDate);
@@ -416,40 +424,47 @@ export class WorkflowsComponent implements OnInit {
     const wf = this.selectedWorkflow();
     if (!wf || !wf.tasks || wf.tasks.length === 0) return { totalPosts: 0, completedPosts: 0, remainingPosts: 0, totalReels: 0, completedReels: 0, remainingReels: 0, progressPercent: 0 };
 
-    let totalPosts = 0;
-    let completedPosts = 0;
-    let totalReels = 0;
-    let completedReels = 0;
+    const postItems = new Map<string, boolean>();
+    const reelItems = new Map<string, boolean>();
     let totalCampaignTasks = 0;
     let completedCampaignTasks = 0;
 
     for (const task of wf.tasks) {
-       const isDone = task.status === 'COMPLETED' || task.status === 'APPROVED';
-       totalCampaignTasks++;
-       if (isDone) completedCampaignTasks++;
+      const isDone = task.status === 'COMPLETED' || task.status === 'APPROVED';
+      totalCampaignTasks++;
+      if (isDone) completedCampaignTasks++;
 
-       // Identify posts
-       if (task.title?.includes("Design Post") || task.title?.includes("Design Carousel") || task.title?.includes("Design Story") || task.title?.toLowerCase().includes("post")) {
-           totalPosts++;
-           if (isDone) completedPosts++;
-       }
-       // Identify reels
-       if (task.title?.includes("Edit Reel") || task.title?.includes("Design Reel Cover") || task.title?.toLowerCase().includes("reel")) {
-           totalReels++;
-           if (isDone) completedReels++;
-       }
+      const title = task.title || '';
+      const postMatch = title.match(/(Post\s*\d+|Carousel\s*\d+|Story\s*\d+)/i);
+      const reelMatch = title.match(/(Reel\s*\d+)/i);
+
+      if (reelMatch) {
+        const key = reelMatch[0].toLowerCase();
+        const prevDone = reelItems.get(key) || false;
+        reelItems.set(key, prevDone || (title.startsWith('Publish') && isDone));
+      } else if (postMatch) {
+        const key = postMatch[0].toLowerCase();
+        const prevDone = postItems.get(key) || false;
+        postItems.set(key, prevDone || (title.startsWith('Publish') && isDone));
+      }
     }
+
+    const totalPosts = postItems.size;
+    const completedPosts = Array.from(postItems.values()).filter(Boolean).length;
+
+    const totalReels = reelItems.size;
+    const completedReels = Array.from(reelItems.values()).filter(Boolean).length;
 
     const progressPercent = totalCampaignTasks > 0 ? Math.round((completedCampaignTasks / totalCampaignTasks) * 100) : 0;
 
     return {
-        totalPosts,
-        completedPosts,
-        remainingPosts: Math.max(0, totalPosts - completedPosts),
-        totalReels,
-        completedReels,
-        remainingReels: Math.max(0, totalReels - completedReels),
-        progressPercent
+      totalPosts,
+      completedPosts,
+      remainingPosts: Math.max(0, totalPosts - completedPosts),
+      totalReels,
+      completedReels,
+      remainingReels: Math.max(0, totalReels - completedReels),
+      progressPercent
     };
   }
 
@@ -569,11 +584,10 @@ export class WorkflowsComponent implements OnInit {
 
   // Detect platform name for a specific task
   getTaskPlatform(task: any): { name: string; color: string; icon: string } {
-    const titleLower = (task?.title || '').toLowerCase();
-    if (titleLower.includes('facebook') || titleLower.includes('fb')) return { name: 'Facebook', color: '#1877f2', icon: '📘' };
-    if (titleLower.includes('linkedin')) return { name: 'LinkedIn', color: '#0a66c2', icon: '💼' };
-    if (titleLower.includes('youtube') || titleLower.includes('video')) return { name: 'YouTube', color: '#ff0000', icon: '▶️' };
-    return { name: 'Instagram', color: '#e1306c', icon: '📸' };
+    if (task?.status === 'COMPLETED' || task?.status === 'APPROVED') {
+      return { name: 'Published', color: '#10b981', icon: '✅' };
+    }
+    return { name: 'Pending Publish', color: '#6b7280', icon: '⏳' };
   }
 
 
@@ -990,6 +1004,7 @@ export class WorkflowsComponent implements OnInit {
   // Modal: Open Task Detail
   openTaskDetail(task: any): void {
     this.selectedTask.set(task);
+    this.selectedPlatforms = task.publishedPlatforms ? [...task.publishedPlatforms] : [];
     this.newComment = '';
     this.newAttachmentName = '';
     this.newAttachmentUrl = '';
@@ -1102,7 +1117,9 @@ export class WorkflowsComponent implements OnInit {
       return;
     }
 
-    this.workflowService.updateTaskStatus(task.id, status).subscribe({
+    const payload = { status, publishedPlatforms: this.selectedPlatforms };
+
+    this.workflowService.updateTaskStatus(task.id, payload).subscribe({
       next: () => {
         this.toast.success(status === 'COMPLETED' ? 'Task completed! Downstream tasks unlocked 🔓' : 'Task status updated');
         const wf = this.selectedWorkflow();
@@ -1125,6 +1142,23 @@ export class WorkflowsComponent implements OnInit {
       return `${me.firstName || ''} ${me.lastName || ''}`.trim() || me.email || 'You';
     }
     return '—';
+  }
+
+  togglePlatform(platform: string): void {
+    const index = this.selectedPlatforms.indexOf(platform);
+    if (index > -1) {
+      this.selectedPlatforms.splice(index, 1);
+    } else {
+      this.selectedPlatforms.push(platform);
+    }
+  }
+
+  selectAllPlatforms(): void {
+    if (this.selectedPlatforms.length === this.AVAILABLE_PLATFORMS.length) {
+      this.selectedPlatforms = [];
+    } else {
+      this.selectedPlatforms = [...this.AVAILABLE_PLATFORMS];
+    }
   }
 
   getDepartmentName(id: string | null): string {
@@ -1176,7 +1210,8 @@ export class WorkflowsComponent implements OnInit {
       return;
     }
     const newStatus = task.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
-    this.workflowService.updateTaskStatus(task.id, newStatus).subscribe({
+    const payload = { status: newStatus };
+    this.workflowService.updateTaskStatus(task.id, payload).subscribe({
       next: () => {
         this.toast.success(newStatus === 'COMPLETED' ? 'Task completed! Downstream tasks unlocked 🔓' : 'Task status updated');
         const wf = this.selectedWorkflow();

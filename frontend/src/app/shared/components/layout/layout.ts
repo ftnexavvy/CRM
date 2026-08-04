@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed, HostListener } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +7,9 @@ import { NotificationService } from '../../../core/services/notification.service
 import { ChatService } from '../../../core/services/chat.service';
 import { ActivityService } from '../../../core/services/activity.service';
 import { SocketService } from '../../../core/services/socket.service';
+import { LeadService } from '../../../core/services/lead.service';
+import { ClientService } from '../../../core/services/client.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { playNotificationSound } from '../../../core/utils/audio.util';
 
 @Component({
@@ -21,7 +24,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private readonly chatService = inject(ChatService);
   private readonly activityService = inject(ActivityService);
   private readonly socketService = inject(SocketService);
+  private readonly leadService = inject(LeadService);
+  private readonly clientService = inject(ClientService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+
+  @ViewChild('contactFileInput') contactFileInput!: ElementRef<HTMLInputElement>;
 
   protected readonly currentUser = this.authService.currentUser;
 
@@ -39,11 +47,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
   adminLogs = signal<any[]>([]);
   logsExpanded = signal(false);
 
-  private pollingTimer: any;
-
   ngOnInit(): void {
     this.fetchData();
-    
+
     // Connect to WebSocket
     this.socketService.connect();
 
@@ -96,7 +102,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
           const oldLen = this.chatMessages().length;
           const newLen = res.data.length;
           this.chatMessages.set(res.data);
-          
+
           if (newLen > oldLen && oldLen > 0) {
             const lastMessage = res.data[newLen - 1];
             if (lastMessage.senderId !== this.currentUser()?.id) {
@@ -189,6 +195,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
+    if (!this.authService.isAdminUser()) {
+      const currentHour = new Date().getHours();
+      if (currentHour < 19) {
+        this.toastService.error('Early logout is not allowed before 7:00 PM (Shift timings: 10:00 AM - 7:00 PM)');
+        return;
+      }
+    }
     this.authService.logout().subscribe(() => {
       this.router.navigate(['/login']);
     });
@@ -223,3 +236,4 @@ export class LayoutComponent implements OnInit, OnDestroy {
     return ['ADMINISTRATOR', 'ADMIN'].includes(roleName.toString().toUpperCase());
   }
 }
+

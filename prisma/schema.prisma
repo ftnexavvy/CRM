@@ -99,6 +99,7 @@ model Company {
   services     Service[]
   activityLogs ActivityLog[]
   notifications Notification[]
+  announcements Announcement[]
   workflowSetting WorkflowSetting?
 
   @@map("companies")
@@ -210,6 +211,7 @@ model Task {
   assignedToId String?
   createdById  String
   completedAt  DateTime?
+  publishedPlatforms String[] @default([])
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   workflow     Workflow       @relation(fields: [workflowId], references: [id], onDelete: Cascade)
@@ -392,19 +394,24 @@ model Lead {
 }
 
 model Client {
-  id          String   @id @default(cuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name         String
-  email       String
-  phone       String?
-  website     String?
-  address     String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name            String
+  email           String
+  phone           String?
+  website         String?
+  address         String?
+  notes           String?
+  status          String    @default("ACTIVE")
+  pausedAt        DateTime?
+  pauseDays       Int?      @default(0)
+  pauseReason     String?
+  nextBillingDate DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  services    ClientService[]
+  services ClientService[]
 
   @@index([companyId])
   @@map("clients")
@@ -469,4 +476,19 @@ model Notification {
 
   @@index([companyId, userId, isRead, createdAt])
   @@map("notifications")
+}
+
+model Announcement {
+  id          String    @id @default(cuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title       String
+  content     String
+  eventDate   DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([companyId, createdAt])
+  @@map("announcements")
 }

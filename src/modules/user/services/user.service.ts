@@ -4,9 +4,28 @@ import { CreateUserDto, UpdateUserDto, UpdateUserStatusDto } from "../dto/user.d
 import { UserRepository } from "../repositories/user.repository";
 import { RoleRepository } from "../../role/repositories/role.repository";
 
+import { PrismaService } from "../../../core/prisma/prisma.service";
+
 @Injectable()
 export class UserService {
-  constructor(private readonly users: UserRepository, private readonly roles: RoleRepository) {}
+  constructor(
+    private readonly users: UserRepository,
+    private readonly roles: RoleRepository,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  async getLoginHistory(companyId: string, userId: string) {
+    await this.required(companyId, userId);
+    return this.prisma.activityLog.findMany({
+      where: {
+        companyId,
+        userId,
+        action: { in: ["user_login", "user_logout"] },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+  }
   async create(companyId: string, dto: CreateUserDto) {
     await this.assertUnique(dto.email, dto.phone);
     await this.assertRole(companyId, dto.roleId);

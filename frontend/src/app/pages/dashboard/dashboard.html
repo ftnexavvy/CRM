@@ -2,160 +2,284 @@
   <div class="page-header">
     <div>
       <h1 class="page-title">CRM Dashboard</h1>
-      <p class="page-subtitle">Welcome back, {{ authService.currentUser()?.firstName }}. Here is a summary of your workspace workloads.</p>
+      <p class="page-subtitle">Welcome back, {{ authService.currentUser()?.firstName }}. Here is a summary of your
+        workspace workloads.</p>
     </div>
     @if (authService.hasPermission('Workflow.Create')) {
-      <a routerLink="/workflows" class="btn btn-primary">
-        <span>+</span> Start Workflow
-      </a>
+    <a routerLink="/workflows" class="btn btn-primary">
+      <span>+</span> Start Task
+    </a>
     }
   </div>
 
   @if (loading()) {
-    <div class="loader-container">
-      <div class="spinner"></div>
-    </div>
+  <div class="loader-container">
+    <div class="spinner"></div>
+  </div>
   } @else {
-    <!-- Stats Cards Grid -->
-    <div class="stats-grid">
-      <div class="card stat-card total">
-        <div class="stat-icon">⚡</div>
-        <div class="stat-info">
-          <span class="stat-label">Active Workflows</span>
-          <span class="stat-value">{{ totalWorkflows() }}</span>
-        </div>
-      </div>
-
-      <div class="card stat-card progress">
-        <div class="stat-icon">⚡</div>
-        <div class="stat-info">
-          <span class="stat-label">In Progress</span>
-          <span class="stat-value">{{ inProgressCount() }}</span>
-        </div>
-      </div>
-
-      <div class="card stat-card review">
-        <div class="stat-icon">🛡</div>
-        <div class="stat-info">
-          <span class="stat-label">Pending Review</span>
-          <span class="stat-value">{{ reviewCount() }}</span>
-        </div>
-      </div>
-
-      <div class="card stat-card completed">
-        <div class="stat-icon">✓</div>
-        <div class="stat-info">
-          <span class="stat-label">Completed</span>
-          <span class="stat-value">{{ completedCount() }}</span>
-        </div>
+  <!-- Stats Cards Grid -->
+  <div class="stats-grid">
+    @if (authService.isAdminUser()) {
+    <div class="card stat-card total">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-info">
+        <span class="stat-label">Active Tasks</span>
+        <span class="stat-value">{{ totalWorkflows() }}</span>
       </div>
     </div>
 
-    <div class="dashboard-sections">
-      <!-- Left Column: Work queue -->
-      <div class="queue-section card">
-        <h3 class="card-title">My Work Queue</h3>
-        <p class="section-desc">Workflows currently assigned to you that require attention</p>
-        
-        @if (myQueue().length === 0) {
-          <div class="empty-state">
-            <div class="empty-icon">✓</div>
-            <p>Your queue is clear! No active assignments.</p>
-          </div>
-        } @else {
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th>Title</th>
-                  <th>Status</th>
-                  <th>Assigned Date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of myQueue(); track item.id) {
-                  <tr>
-                    <td>
-                      <span class="subject-type">{{ item.workflow.subjectType }}</span>
-                      <span class="subject-id">#{{ item.workflow.subjectId }}</span>
-                    </td>
-                    <td class="bold-text">{{ item.workflow.title }}</td>
-                    <td>
-                      <span class="badge" [ngClass]="item.workflow.status | lowercase">{{ item.workflow.status | formatEnum }}</span>
-                    </td>
-                    <td class="text-muted">{{ item.assignedAt | date:'mediumDate' }}</td>
-                    <td>
-                      <a [routerLink]="['/workflows']" [queryParams]="{ id: item.workflowId }" class="btn btn-secondary btn-icon" title="View details">
-                        ➔
-                      </a>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+    <div class="card stat-card progress">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-info">
+        <span class="stat-label">In Progress</span>
+        <span class="stat-value">{{ inProgressCount() }}</span>
       </div>
+    </div>
 
-      <!-- Right Column: Department distribution -->
-      <div class="dept-section card">
-        <h3 class="card-title">Department Workloads</h3>
-        <p class="section-desc">Distribution of active workflows across departments</p>
+    <div class="card stat-card review">
+      <div class="stat-icon">🛡</div>
+      <div class="stat-info">
+        <span class="stat-label">Pending Review</span>
+        <span class="stat-value">{{ reviewCount() }}</span>
+      </div>
+    </div>
 
-        @if (departmentWorkloads().length === 0) {
-          <div class="empty-state">
-            <p>No active department assignments.</p>
+    <div class="card stat-card completed">
+      <div class="stat-icon">✓</div>
+      <div class="stat-info">
+        <span class="stat-label">Completed</span>
+        <span class="stat-value">{{ completedCount() }}</span>
+      </div>
+    </div>
+    } @else {
+    <div class="card stat-card total">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-info">
+        <span class="stat-label">Total Client Tasks</span>
+        <span class="stat-value">{{ employeeTotalTasks() }}</span>
+      </div>
+    </div>
+
+    <div class="card stat-card progress">
+      <div class="stat-icon">📅</div>
+      <div class="stat-info">
+        <span class="stat-label">Today's Tasks</span>
+        <span class="stat-value">{{ employeeTodayTasks() }}</span>
+      </div>
+    </div>
+
+    <div class="card stat-card review">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info">
+        <span class="stat-label">Pending Tasks</span>
+        <span class="stat-value">{{ employeePendingTasks() }}</span>
+      </div>
+    </div>
+
+    <div class="card stat-card completed">
+      <div class="stat-icon">✓</div>
+      <div class="stat-info">
+        <span class="stat-label">Completed Tasks</span>
+        <span class="stat-value">{{ employeeCompletedTasks() }}</span>
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- Top Full-Width Section: Latest Announcements & News -->
+  <div class="announcements-section card" style="margin-top: 20px; margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <div>
+        <h3 class="card-title" style="margin: 0;">📢 Latest News & Announcements</h3>
+        <p class="section-desc" style="margin: 0; font-size: 0.85rem;">Company news, event schedules, and team updates
+        </p>
+      </div>
+      @if (authService.isAdminUser()) {
+      <button class="btn btn-sm btn-primary" (click)="showAnnouncementModal = true">+ Post Announcement</button>
+      }
+    </div>
+
+    @if (announcements().length === 0) {
+    <div class="empty-state" style="padding: 15px; text-align: center; color: #64748b;">
+      <p style="margin: 0;">No announcements posted yet. Check back later!</p>
+    </div>
+    } @else {
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+      @for (ann of announcements(); track ann.id) {
+      <div
+        style="background: var(--bg-color-alt, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+        @if (authService.isAdminUser()) {
+        <button type="button" (click)="deleteAnnouncement(ann.id)"
+          style="position: absolute; top: 10px; right: 10px; border: none; background: transparent; color: #ef4444; cursor: pointer; font-size: 0.9rem;"
+          title="Delete announcement">🗑️</button>
+        }
+        <div>
+          <div
+            style="font-weight: 700; font-size: 1rem; color: var(--primary-color, #4f46e5); margin-bottom: 6px; padding-right: 20px;">
+            {{ ann.title }}
           </div>
-        } @else {
-          <div class="workload-list">
-            @for (dept of departmentWorkloads(); track dept.departmentId) {
-              <div class="workload-item">
-                <div class="workload-header">
-                  <span class="dept-name">{{ dept.departmentName }}</span>
-                  <span class="workload-count">{{ dept.count }} workflow(s)</span>
-                </div>
-                <div class="progress-bar-container">
-                  <div class="progress-bar" [style.width.%]="(totalWorkflows() > 0 ? (dept.count / totalWorkflows()) * 100 : 0)"></div>
-                </div>
-              </div>
+          <p
+            style="font-size: 0.9rem; color: var(--text-color, #334155); margin-bottom: 10px; line-height: 1.4; white-space: pre-wrap;">
+            {{ ann.content }}
+          </p>
+        </div>
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #64748b; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 8px; padding-top: 6px;">
+          @if (ann.eventDate) {
+          <span
+            style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; padding: 2px 8px; border-radius: 12px; font-weight: 600;">
+            🗓 Event: {{ ann.eventDate | date:'d MMM yyyy' }}
+          </span>
+          } @else {
+          <span>Posted {{ ann.createdAt | date:'d MMM' }}</span>
+          }
+          <span style="font-size: 0.75rem;">{{ ann.createdAt | date:'h:mm a' }}</span>
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+
+  <div class="dashboard-sections">
+    <!-- Left Column: Work queue -->
+    <div class="queue-section card">
+      <h3 class="card-title">My Work Queue</h3>
+      <p class="section-desc">Tasks currently assigned to you that require attention</p>
+
+      @if (myQueue().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">✓</div>
+        <p>Your queue is clear! No active assignments.</p>
+      </div>
+      } @else {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Assigned Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of myQueue(); track item.id) {
+            <tr>
+              <td>
+                <span class="subject-type">{{ item.workflow.subjectType }}</span>
+                <span class="subject-id">#{{ item.workflow.subjectId }}</span>
+              </td>
+              <td class="bold-text">{{ item.workflow.title }}</td>
+              <td>
+                <span class="badge" [ngClass]="item.workflow.status | lowercase">{{ item.workflow.status | formatEnum
+                  }}</span>
+              </td>
+              <td class="text-muted">{{ item.assignedAt | date:'mediumDate' }}</td>
+              <td>
+                <a [routerLink]="['/workflows']" [queryParams]="{ id: item.workflowId }"
+                  class="btn btn-secondary btn-icon" title="View details">
+                  ➔
+                </a>
+              </td>
+            </tr>
             }
-          </div>
-        }
+          </tbody>
+        </table>
       </div>
+      }
     </div>
 
-    <!-- Bottom Section: Live Activity Logs -->
-    <div class="activity-feed-section card mt-4">
-      <div class="feed-header">
-        <h3 class="card-title">Live Activity Log</h3>
-        <p class="section-desc">Real-time actions and audit records across the system</p>
-      </div>
+    <!-- Right Column: Department distribution -->
+    <div class="dept-section card">
+      <h3 class="card-title">Department Workloads</h3>
+      <p class="section-desc">Distribution of active workflows across departments</p>
 
-      <div class="activity-feed-body">
-        @if (activities().length === 0) {
-          <div class="empty-state">
-            <p>No activity logs recorded yet.</p>
+      @if (departmentWorkloads().length === 0) {
+      <div class="empty-state">
+        <p>No active department assignments.</p>
+      </div>
+      } @else {
+      <div class="workload-list">
+        @for (dept of departmentWorkloads(); track dept.departmentId) {
+        <div class="workload-item">
+          <div class="workload-header">
+            <span class="dept-name">{{ dept.departmentName }}</span>
+            <span class="workload-count">{{ dept.count }} workflow(s)</span>
           </div>
-        } @else {
-          <div class="activity-timeline">
-            @for (act of activities(); track act.id) {
-              <div class="timeline-item">
-                <div class="timeline-icon">
-                  {{ getActivityIcon(act.action) }}
-                </div>
-                <div class="timeline-content">
-                  <div class="timeline-desc">
-                    <strong class="actor-name">{{ act.user?.firstName }} {{ act.user?.lastName || '' }}</strong> {{ act.details }}
-                  </div>
-                  <div class="timeline-time">{{ act.createdAt | date:'medium' }}</div>
-                </div>
-              </div>
-            }
+          <div class="progress-bar-container">
+            <div class="progress-bar"
+              [style.width.%]="(totalWorkflows() > 0 ? (dept.count / totalWorkflows()) * 100 : 0)"></div>
           </div>
+        </div>
         }
       </div>
+      }
     </div>
+  </div>
+
+  <!-- Bottom Section: Live Activity Logs (Admin Only) -->
+  @if (authService.isAdminUser()) {
+  <div class="activity-feed-section card mt-4">
+    <div class="feed-header">
+      <h3 class="card-title">Live Activity Log</h3>
+      <p class="section-desc">Real-time actions and audit records across the system</p>
+    </div>
+
+    <div class="activity-feed-body">
+      @if (activities().length === 0) {
+      <div class="empty-state">
+        <p>No activity logs recorded yet.</p>
+      </div>
+      } @else {
+      <div class="activity-timeline">
+        @for (act of activities(); track act.id) {
+        <div class="timeline-item">
+          <div class="timeline-icon">
+            {{ getActivityIcon(act.action) }}
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-desc">
+              <strong class="actor-name">{{ act.user?.firstName }} {{ act.user?.lastName || '' }}</strong> {{
+              act.details }}
+            </div>
+            <div class="timeline-time">{{ act.createdAt | date:'medium' }}</div>
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+  }
   }
 </div>
+
+<!-- Modal: Post New Announcement (Admin) -->
+<app-modal title="📢 Post New Announcement / Event News" [visible]="showAnnouncementModal"
+  (close)="showAnnouncementModal = false">
+  <form (ngSubmit)="onCreateAnnouncementSubmit()">
+    <div class="form-group">
+      <label for="annTitle">Title *</label>
+      <input type="text" id="annTitle" name="annTitle" [(ngModel)]="announcementTitle"
+        placeholder="e.g. Movie Outing on 12th August!" required />
+    </div>
+
+    <div class="form-group">
+      <label for="annContent">Message / Details *</label>
+      <textarea id="annContent" name="annContent" [(ngModel)]="announcementContent" rows="4"
+        placeholder="e.g. We are planning a team movie night on 12th August at 6 PM!" required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="annEventDate">Event Date (Optional)</label>
+      <input type="date" id="annEventDate" name="annEventDate" [(ngModel)]="announcementEventDate" />
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showAnnouncementModal = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submittingAnnouncement()">Post Announcement</button>
+    </div>
+  </form>
+</app-modal>

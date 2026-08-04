@@ -145,4 +145,58 @@ export class LeadService {
       `Deleted Lead '${lead.name}'`
     );
   }
+
+  async importContacts(companyId: string, actorId: string, contacts: Array<{ name: string; phone?: string; email?: string }>) {
+    if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
+      return { importedCount: 0, message: "No contacts provided for import" };
+    }
+
+    // Fetch existing phones in this company to skip duplicates
+    const existingLeads = await this.prisma.lead.findMany({
+      where: { companyId },
+      select: { phone: true, email: true },
+    });
+
+    const existingPhones = new Set(existingLeads.map((l) => l.phone).filter(Boolean));
+
+    const newLeadsData = contacts
+      .filter((c) => c && c.name && c.name.trim().length > 0)
+      .map((c) => {
+        const cleanPhone = c.phone ? c.phone.trim() : undefined;
+        if (cleanPhone && existingPhones.has(cleanPhone)) {
+          return null; // skip duplicate phone
+        }
+        if (cleanPhone) existingPhones.add(cleanPhone);
+        return {
+          companyId,
+          name: c.name.trim(),
+          phone: cleanPhone || null,
+          email: c.email ? c.email.trim() : null,
+          source: "Mobile Phone Contact Sync",
+          notes: "Imported via Mobile Phone Contacts Sync",
+        };
+      })
+      .filter(Boolean) as any[];
+
+    if (newLeadsData.length === 0) {
+      return { importedCount: 0, message: "All contacts already exist in CRM" };
+    }
+
+    await this.prisma.lead.createMany({
+      data: newLeadsData,
+    });
+
+    await this.activityService.log(
+      companyId,
+      actorId,
+      "contacts_imported",
+      `Synced ${newLeadsData.length} phone contacts into CRM Leads`
+    );
+
+    return {
+      importedCount: newLeadsData.length,
+      message: `Successfully imported ${newLeadsData.length} phone contacts`,
+    };
+  }
 }
+

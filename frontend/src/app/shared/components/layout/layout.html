@@ -5,52 +5,57 @@
       <div class="logo-icon">▲</div>
       <div class="logo-text">FT CRM</div>
     </div>
-    
+
     <nav class="nav-links">
       <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
         <span class="nav-icon">⊞</span>
         <span class="nav-label">Dashboard</span>
       </a>
-      
+
       @if (hasPermission('Workflow.Read')) {
-        <a class="nav-link" routerLink="/workflows" routerLinkActive="active">
-          <span class="nav-icon">⚡</span>
-          <span class="nav-label">Workflows</span>
-        </a>
+      <a class="nav-link" routerLink="/workflows" routerLinkActive="active">
+        <span class="nav-icon">⚡</span>
+        <span class="nav-label">Tasks</span>
+      </a>
       }
 
       @if (isAdminUser()) {
-        <a class="nav-link" routerLink="/leads" routerLinkActive="active">
-          <span class="nav-icon">📣</span>
-          <span class="nav-label">Leads</span>
-        </a>
+      <a class="nav-link" routerLink="/leads" routerLinkActive="active">
+        <span class="nav-icon">📣</span>
+        <span class="nav-label">Leads</span>
+      </a>
 
-        <a class="nav-link" routerLink="/clients" routerLinkActive="active">
-          <span class="nav-icon">⭐</span>
-          <span class="nav-label">Clients</span>
-        </a>
+      <a class="nav-link" routerLink="/clients" routerLinkActive="active">
+        <span class="nav-icon">⭐</span>
+        <span class="nav-label">Clients</span>
+      </a>
       }
-      
+
       @if (hasPermission('Department.Read') && isAdminUser()) {
-        <a class="nav-link" routerLink="/departments" routerLinkActive="active">
-          <span class="nav-icon">🏢</span>
-          <span class="nav-label">Departments</span>
-        </a>
+      <a class="nav-link" routerLink="/departments" routerLinkActive="active">
+        <span class="nav-icon">🏢</span>
+        <span class="nav-label">Departments</span>
+      </a>
       }
-      
+
       @if (hasPermission('User.Read') && isAdminUser()) {
-        <a class="nav-link" routerLink="/users" routerLinkActive="active">
-          <span class="nav-icon">👥</span>
-          <span class="nav-label">Employees</span>
-        </a>
+      <a class="nav-link" routerLink="/users" routerLinkActive="active">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Employees</span>
+      </a>
       }
-      
+
       @if (hasPermission('Role.Read') && isAdminUser()) {
-        <a class="nav-link" routerLink="/roles" routerLinkActive="active">
-          <span class="nav-icon">🛡</span>
-          <span class="nav-label">Roles & Perms</span>
-        </a>
+      <a class="nav-link" routerLink="/roles" routerLinkActive="active">
+        <span class="nav-icon">🛡</span>
+        <span class="nav-label">Roles & Perms</span>
+      </a>
       }
+
+      <a class="nav-link" routerLink="/posts" routerLinkActive="active">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">Posts</span>
+      </a>
 
       <a class="nav-link" routerLink="/chat" routerLinkActive="active">
         <span class="nav-icon">💬</span>
@@ -58,10 +63,10 @@
       </a>
 
       @if (isAdminUser()) {
-        <a class="nav-link" routerLink="/settings" routerLinkActive="active">
-          <span class="nav-icon">⚙️</span>
-          <span class="nav-label">Settings</span>
-        </a>
+      <a class="nav-link" routerLink="/settings" routerLinkActive="active">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </a>
       }
     </nav>
 
@@ -80,40 +85,41 @@
       <div class="header-left">
         <h2 class="company-name-title">{{ currentUser()?.company?.companyName }}</h2>
       </div>
-      
+
       <div class="header-right">
         <!-- Notification Bell & Dropdown -->
         <div class="notification-container">
-          <button class="btn btn-secondary btn-icon notification-bell-btn" (click)="toggleNotificationDropdown($event)" title="Notifications">
+          <button class="btn btn-secondary btn-icon notification-bell-btn" (click)="toggleNotificationDropdown($event)"
+            title="Notifications">
             <span style="font-size: 1.2rem; line-height: 1;">🔔</span>
             @if (unreadCount() > 0) {
-              <span class="notification-badge">{{ unreadCount() }}</span>
+            <span class="notification-badge">{{ unreadCount() }}</span>
             }
           </button>
-          
+
           @if (showNotificationDropdown()) {
-            <div class="notification-dropdown card" (click)="$event.stopPropagation()">
-              <div class="dropdown-header">
-                <h3>Notifications</h3>
-                @if (unreadCount() > 0) {
-                  <button class="btn-link" (click)="markAllAsRead()">Mark all read</button>
-                }
-              </div>
-              
-              <div class="dropdown-body">
-                @if (notifications().length === 0) {
-                  <div class="empty-notifications">No notifications yet.</div>
-                } @else {
-                  @for (n of notifications(); track n.id) {
-                    <div class="notification-item" [ngClass]="{ unread: !n.isRead }" (click)="markAsRead(n.id, $event)">
-                      <div class="notification-title bold-text">{{ n.title }}</div>
-                      <div class="notification-msg">{{ n.message }}</div>
-                      <div class="notification-time">{{ n.createdAt | date:'shortTime' }}</div>
-                    </div>
-                  }
-                }
-              </div>
+          <div class="notification-dropdown card" (click)="$event.stopPropagation()">
+            <div class="dropdown-header">
+              <h3>Notifications</h3>
+              @if (unreadCount() > 0) {
+              <button class="btn-link" (click)="markAllAsRead()">Mark all read</button>
+              }
             </div>
+
+            <div class="dropdown-body">
+              @if (notifications().length === 0) {
+              <div class="empty-notifications">No notifications yet.</div>
+              } @else {
+              @for (n of notifications(); track n.id) {
+              <div class="notification-item" [ngClass]="{ unread: !n.isRead }" (click)="markAsRead(n.id, $event)">
+                <div class="notification-title bold-text">{{ n.title }}</div>
+                <div class="notification-msg">{{ n.message }}</div>
+                <div class="notification-time">{{ n.createdAt | date:'shortTime' }}</div>
+              </div>
+              }
+              }
+            </div>
+          </div>
           }
         </div>
 
@@ -140,35 +146,35 @@
 
     <!-- Global Collapsible Admin Activity Log Terminal (Bottom Side) -->
     @if (isAdminUser()) {
-      <div class="global-admin-log-bar" [ngClass]="{ expanded: logsExpanded() }">
-        <div class="log-bar-header" (click)="toggleLogs()">
-          <div class="log-bar-title">
-            <span class="pulse-indicator"></span>
-            <strong>System Activity Log (Live)</strong>
-            <span class="log-count-tag">{{ adminLogs().length }} events</span>
-          </div>
-          <div class="log-bar-actions">
-            <button class="btn-toggle-logs">{{ logsExpanded() ? '▼ Collapse' : '▲ Expand' }}</button>
-          </div>
+    <div class="global-admin-log-bar" [ngClass]="{ expanded: logsExpanded() }">
+      <div class="log-bar-header" (click)="toggleLogs()">
+        <div class="log-bar-title">
+          <span class="pulse-indicator"></span>
+          <strong>System Activity Log (Live)</strong>
+          <span class="log-count-tag">{{ adminLogs().length }} events</span>
         </div>
-
-        <div class="log-bar-body">
-          @if (adminLogs().length === 0) {
-            <div class="log-empty">No activity logs recorded yet.</div>
-          } @else {
-            <div class="log-list">
-              @for (log of adminLogs(); track log.id) {
-                <div class="log-row">
-                  <span class="log-icon">{{ getActivityIcon(log.action) }}</span>
-                  <span class="log-time">[{{ log.createdAt | date:'HH:mm:ss' }}]</span>
-                  <span class="log-user">{{ log.user?.firstName }} {{ log.user?.lastName || '' }}:</span>
-                  <span class="log-details">{{ log.details }}</span>
-                </div>
-              }
-            </div>
-          }
+        <div class="log-bar-actions">
+          <button class="btn-toggle-logs">{{ logsExpanded() ? '▼ Collapse' : '▲ Expand' }}</button>
         </div>
       </div>
+
+      <div class="log-bar-body">
+        @if (adminLogs().length === 0) {
+        <div class="log-empty">No activity logs recorded yet.</div>
+        } @else {
+        <div class="log-list">
+          @for (log of adminLogs(); track log.id) {
+          <div class="log-row">
+            <span class="log-icon">{{ getActivityIcon(log.action) }}</span>
+            <span class="log-time">[{{ log.createdAt | date:'HH:mm:ss' }}]</span>
+            <span class="log-user">{{ log.user?.firstName }} {{ log.user?.lastName || '' }}:</span>
+            <span class="log-details">{{ log.details }}</span>
+          </div>
+          }
+        </div>
+        }
+      </div>
+    </div>
     }
   </div>
 
@@ -176,36 +182,37 @@
   <div class="floating-chat-widget" [ngClass]="{ expanded: chatExpanded() }">
     <!-- Chat Expanded Window -->
     @if (chatExpanded()) {
-      <div class="floating-chat-window card">
-        <div class="floating-chat-header">
-          <div class="chat-title">
-            <span class="status-dot online"></span>
-            <span>Live Team Chat</span>
-          </div>
-          <button class="btn-close-chat" (click)="toggleChat()">×</button>
+    <div class="floating-chat-window card">
+      <div class="floating-chat-header">
+        <div class="chat-title">
+          <span class="status-dot online"></span>
+          <span>Live Team Chat</span>
         </div>
-        
-        <div class="floating-chat-body">
-          @if (chatMessages().length === 0) {
-            <div class="chat-empty">No messages yet. Send a greeting to start chatting!</div>
-          } @else {
-            @for (msg of chatMessages(); track msg.id) {
-              <div class="chat-bubble-wrapper" [ngClass]="{ me: msg.senderId === currentUser()?.id }">
-                <div class="chat-sender">{{ msg.sender?.firstName }} {{ msg.sender?.lastName || '' }}</div>
-                <div class="chat-bubble">
-                  {{ msg.content }}
-                </div>
-                <div class="chat-timestamp">{{ msg.createdAt | date:'shortTime' }}</div>
-              </div>
-            }
-          }
-        </div>
-        
-        <form class="floating-chat-footer" (ngSubmit)="sendChatMessage($event)">
-          <input type="text" name="chatText" [(ngModel)]="newChatMessageText" placeholder="Type a message..." required autocomplete="off" />
-          <button type="submit" class="btn btn-primary btn-sm">Send</button>
-        </form>
+        <button class="btn-close-chat" (click)="toggleChat()">×</button>
       </div>
+
+      <div class="floating-chat-body">
+        @if (chatMessages().length === 0) {
+        <div class="chat-empty">No messages yet. Send a greeting to start chatting!</div>
+        } @else {
+        @for (msg of chatMessages(); track msg.id) {
+        <div class="chat-bubble-wrapper" [ngClass]="{ me: msg.senderId === currentUser()?.id }">
+          <div class="chat-sender">{{ msg.sender?.firstName }} {{ msg.sender?.lastName || '' }}</div>
+          <div class="chat-bubble">
+            {{ msg.content }}
+          </div>
+          <div class="chat-timestamp">{{ msg.createdAt | date:'shortTime' }}</div>
+        </div>
+        }
+        }
+      </div>
+
+      <form class="floating-chat-footer" (ngSubmit)="sendChatMessage($event)">
+        <input type="text" name="chatText" [(ngModel)]="newChatMessageText" placeholder="Type a message..." required
+          autocomplete="off" />
+        <button type="submit" class="btn btn-primary btn-sm">Send</button>
+      </form>
+    </div>
     }
 
     <!-- Chat Trigger Bubble -->

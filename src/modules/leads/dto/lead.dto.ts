@@ -137,3 +137,25 @@ export class AssignLeadDto {
   @IsString()
   assignedToId!: string | null;
 }
+
+export class ImportedContactItemDto {
+  @ApiProperty({ example: "Rahul Sharma" })
+  @IsString()
+  name!: string;
+
+  @ApiPropertyOptional({ example: "+919876543210" })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({ example: "rahul@example.com" })
+  @IsOptional()
+  @IsString()
+  email?: string;
+}
+
+export class ImportContactsDto {
+  @ApiProperty({ type: [ImportedContactItemDto] })
+  contacts!: ImportedContactItemDto[];
+}
+

@@ -45,10 +45,21 @@
   border: 1px solid var(--border-color);
 }
 
-.metric-icon.bg-info { background-color: rgba(59, 130, 246, 0.15); }
-.metric-icon.bg-success { background-color: rgba(16, 185, 129, 0.15); }
-.metric-icon.bg-accent { background-color: rgba(139, 92, 246, 0.15); }
-.metric-icon.bg-warning { background-color: rgba(245, 158, 11, 0.15); }
+.metric-icon.bg-info {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+
+.metric-icon.bg-success {
+  background-color: rgba(16, 185, 129, 0.15);
+}
+
+.metric-icon.bg-accent {
+  background-color: rgba(139, 92, 246, 0.15);
+}
+
+.metric-icon.bg-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+}
 
 .metric-data {
   display: flex;
@@ -68,10 +79,21 @@
 }
 
 /* Colors override */
-.text-info { color: var(--info-color); }
-.text-success { color: var(--success-color); }
-.text-accent { color: #a78bfa; }
-.text-warning { color: var(--warning-color); }
+.text-info {
+  color: var(--info-color);
+}
+
+.text-success {
+  color: var(--success-color);
+}
+
+.text-accent {
+  color: #a78bfa;
+}
+
+.text-warning {
+  color: var(--warning-color);
+}
 
 /* Action Bar / Filters */
 .leads-action-bar {
@@ -533,3 +555,28 @@ tbody tr.active td {
   margin-left: 16px;
 }
 
+padding: 4px 24px 4px 8px;
+font-size: 12px;
+}
+
+.leads-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.flex-spacer {
+  flex: 1;
+}
+
+.gap-2 {
+  gap: var(--space-2);
+}
+
+.gap-3 {
+  gap: var(--space-3);
+}
+
+.mb-6 {
+  margin-bottom: var(--space-6);
+}

@@ -28,6 +28,14 @@ export class ClientService {
     return this.http.patch<any>(`/api/v1/clients/${id}`, client);
   }
 
+  pause(id: string, pauseDays: number, reason?: string): Observable<any> {
+    return this.http.post<any>(`/api/v1/clients/${id}/pause`, { pauseDays, reason });
+  }
+
+  resume(id: string): Observable<any> {
+    return this.http.post<any>(`/api/v1/clients/${id}/resume`, {});
+  }
+
   delete(id: string): Observable<any> {
     return this.http.delete<any>(`/api/v1/clients/${id}`);
   }

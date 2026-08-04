@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger"
 import { CurrentUser } from "../../auth/decorators/current-user.decorator";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { AuthUser } from "../../auth/interfaces/auth-repository.interface";
-import { CreateLeadDto, UpdateLeadDto, UpdateLeadStatusDto, AssignLeadDto } from "../dto/lead.dto";
+import { CreateLeadDto, UpdateLeadDto, UpdateLeadStatusDto, AssignLeadDto, ImportContactsDto } from "../dto/lead.dto";
 import { LeadService } from "../services/lead.service";
 import { LeadStatus } from "@prisma/client";
 
@@ -14,6 +14,13 @@ import { LeadStatus } from "@prisma/client";
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
 
+  @Post("import-contacts")
+  @ApiOperation({ summary: "Import phone contacts in bulk from device" })
+  async importContacts(@CurrentUser() user: AuthUser, @Body() dto: ImportContactsDto) {
+    const data = await this.leadService.importContacts(user.companyId, user.id, dto.contacts);
+    return { success: true, message: data.message, data };
+  }
+
   @Post()
   @ApiOperation({ summary: "Create a new lead" })
   async create(@CurrentUser() user: AuthUser, @Body() dto: CreateLeadDto) {
@@ -22,6 +29,7 @@ export class LeadController {
   }
 
   @Get()
+
   @ApiOperation({ summary: "Retrieve all leads" })
   @ApiQuery({ name: "status", required: false, enum: LeadStatus })
   @ApiQuery({ name: "assignedToId", required: false, type: String })

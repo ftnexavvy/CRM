@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { WorkflowService } from '../../core/services/workflow.service';
@@ -7,9 +7,14 @@ import { AuthService } from '../../core/services/auth.service';
 import { ActivityService } from '../../core/services/activity.service';
 import { FormatEnumPipe } from '../../shared/pipes/format-enum.pipe';
 
+import { AnnouncementService } from '../../core/services/announcement.service';
+import { ToastService } from '../../core/services/toast.service';
+import { ModalComponent } from '../../shared/components/modal/modal';
+import { FormsModule } from '@angular/forms';
+
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, RouterLink, FormatEnumPipe],
+  imports: [CommonModule, RouterLink, FormatEnumPipe, ModalComponent, FormsModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
@@ -17,12 +22,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly workflowService = inject(WorkflowService);
   private readonly departmentService = inject(DepartmentService);
   private readonly activityService = inject(ActivityService);
+  private readonly announcementService = inject(AnnouncementService);
+  private readonly toast = inject(ToastService);
   readonly authService = inject(AuthService);
 
   loading = signal(true);
   myQueue = signal<any[]>([]);
   departmentMap = signal<Record<string, string>>({});
+
+  // Employee specific stats
+  employeeTotalTasks = computed(() => this.myQueue().length);
+  employeeTodayTasks = computed(() => {
+    const todayStr = new Date().toDateString();
+    return this.myQueue().filter(item => {
+      const due = item.workflow?.dueDate || item.assignedAt;
+      return due && new Date(due).toDateString() === todayStr;
+    }).length;
+  });
+  employeePendingTasks = computed(() => {
+    return this.myQueue().filter(item => item.workflow?.status !== 'COMPLETED' && item.workflow?.status !== 'APPROVED').length;
+  });
+  employeeCompletedTasks = computed(() => {
+    return this.myQueue().filter(item => item.workflow?.status === 'COMPLETED' || item.workflow?.status === 'APPROVED').length;
+  });
   
+  // Announcements
+  announcements = signal<any[]>([]);
+  showAnnouncementModal = false;
+  announcementTitle = '';
+  announcementContent = '';
+  announcementEventDate = '';
+  submittingAnnouncement = signal(false);
+
   // Aggregated stats
   totalWorkflows = signal(0);
   inProgressCount = signal(0);
@@ -38,6 +69,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadDashboardData();
+    this.loadAnnouncements();
     this.startPollingActivities();
   }
 
@@ -159,5 +191,53 @@ export class DashboardComponent implements OnInit, OnDestroy {
       case 'task_attachment_added': return '📎';
       default: return '⚙️';
     }
+  }
+
+  loadAnnouncements(): void {
+    this.announcementService.all().subscribe({
+      next: (res) => {
+        if (res.success && Array.isArray(res.data)) {
+          this.announcements.set(res.data);
+        }
+      }
+    });
+  }
+
+  onCreateAnnouncementSubmit(): void {
+    if (!this.announcementTitle || !this.announcementContent) {
+      this.toast.warning('Title and message content are required');
+      return;
+    }
+
+    this.submittingAnnouncement.set(true);
+    this.announcementService.create({
+      title: this.announcementTitle,
+      content: this.announcementContent,
+      eventDate: this.announcementEventDate || undefined
+    }).subscribe({
+      next: () => {
+        this.toast.success('Announcement posted successfully!');
+        this.showAnnouncementModal = false;
+        this.announcementTitle = '';
+        this.announcementContent = '';
+        this.announcementEventDate = '';
+        this.submittingAnnouncement.set(false);
+        this.loadAnnouncements();
+      },
+      error: (err) => {
+        this.submittingAnnouncement.set(false);
+        this.toast.error(err.error?.message || 'Failed to post announcement');
+      }
+    });
+  }
+
+  deleteAnnouncement(id: string): void {
+    if (!confirm('Are you sure you want to delete this announcement?')) return;
+    this.announcementService.delete(id).subscribe({
+      next: () => {
+        this.toast.success('Announcement deleted');
+        this.loadAnnouncements();
+      }
+    });
   }
 }

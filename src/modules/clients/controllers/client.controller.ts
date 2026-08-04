@@ -48,6 +48,20 @@ export class ClientController {
     return { success: true, message: "Client updated successfully", data };
   }
 
+  @Post(":id/pause")
+  @ApiOperation({ summary: "Pause client services and extend billing cycle" })
+  async pause(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body() dto: { pauseDays: number; reason?: string }) {
+    const data = await this.clientService.pause(user.companyId, user.id, id, dto);
+    return { success: true, message: "Client services paused and billing extended successfully", data };
+  }
+
+  @Post(":id/resume")
+  @ApiOperation({ summary: "Resume client services" })
+  async resume(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const data = await this.clientService.resume(user.companyId, user.id, id);
+    return { success: true, message: "Client services resumed successfully", data };
+  }
+
   @Delete(":id")
   @ApiOperation({ summary: "Delete client" })
   async delete(@CurrentUser() user: AuthUser, @Param("id") id: string) {

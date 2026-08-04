@@ -9,33 +9,21 @@
     <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
       <div class="form-group">
         <label for="email">Work Email</label>
-        <input 
-          type="email" 
-          id="email" 
-          name="email" 
-          [(ngModel)]="email" 
-          placeholder="admin@nexavvy.com"
-          required 
+        <input type="email" id="email" name="email" [(ngModel)]="email" placeholder="admin@nexavvy.com" required
           autocomplete="email" />
       </div>
 
       <div class="form-group">
         <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password" 
-          [(ngModel)]="password" 
-          placeholder="••••••••••••"
-          required 
+        <input type="password" id="password" name="password" [(ngModel)]="password" placeholder="••••••••••••" required
           autocomplete="current-password" />
       </div>
 
       <button type="submit" class="btn btn-primary w-full mt-4" [disabled]="loading()">
         @if (loading()) {
-          <div class="spinner spinner-sm" style="display:inline-block; margin-right:8px;"></div> Loading...
+        <div class="spinner spinner-sm" style="display:inline-block; margin-right:8px;"></div> Loading...
         } @else {
-          Sign In
+        Sign In
         }
       </button>
     </form>

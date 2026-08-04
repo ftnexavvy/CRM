@@ -46,4 +46,9 @@ export class LeadService {
   delete(id: string): Observable<any> {
     return this.http.delete<any>(`/api/v1/leads/${id}`);
   }
+
+  importContacts(contacts: any[]): Observable<any> {
+    return this.http.post<any>('/api/v1/leads/import-contacts', { contacts });
+  }
 }
+

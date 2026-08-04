@@ -13,6 +13,8 @@ import { NotificationModule } from "./modules/notifications/notification.module"
 import { ServiceCatalogModule } from "./modules/services/service-catalog.module";
 import { GatewayModule } from "./core/gateway/gateway.module";
 
+import { AnnouncementModule } from "./modules/announcement/announcement.module";
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -30,6 +32,7 @@ import { GatewayModule } from "./core/gateway/gateway.module";
     ActivityModule,
     NotificationModule,
     ServiceCatalogModule,
+    AnnouncementModule,
     GatewayModule,
   ],
 })

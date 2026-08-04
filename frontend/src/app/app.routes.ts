@@ -11,6 +11,7 @@ import { ChatComponent } from './pages/chat/chat';
 import { LeadsComponent } from './pages/leads/leads';
 import { ClientsComponent } from './pages/clients/clients';
 import { SettingsComponent } from './pages/settings/settings';
+import { PostsComponent } from './pages/posts/posts';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -30,8 +31,10 @@ export const routes: Routes = [
       { path: 'leads', component: LeadsComponent },
       { path: 'clients', component: ClientsComponent },
       { path: 'settings', component: SettingsComponent },
+      { path: 'posts', component: PostsComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
+
   { path: '**', redirectTo: 'login' }
 ];

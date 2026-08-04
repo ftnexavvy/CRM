@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, Logger, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Inject, Injectable, Logger, UnauthorizedException, forwardRef } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as argon2 from "argon2";
@@ -8,6 +8,8 @@ import { AuthDataEntity, AuthUserEntity } from "../entities/auth-response.entity
 import { AUTH_REPOSITORY, AuthUser, IAuthRepository } from "../interfaces/auth-repository.interface";
 import { JwtPayload } from "../interfaces/jwt-payload.interface";
 
+import { ActivityService } from "../../activity/services/activity.service";
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -16,6 +18,7 @@ export class AuthService {
     @Inject(AUTH_REPOSITORY) private readonly authRepository: IAuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => ActivityService)) private readonly activityService: ActivityService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthDataEntity> {
@@ -48,9 +51,52 @@ export class AuthService {
       throw new UnauthorizedException("Invalid email or password");
     }
     this.assertActive(user);
+
+    // Shift Timings Check: 10:00 AM to 7:00 PM (10:00 to 19:00). Admins exempt.
+    const roleName = (typeof user.role === 'string' ? user.role : user.role?.name || '').toUpperCase();
+    const isAdmin = ['ADMINISTRATOR', 'ADMIN'].includes(roleName);
+    if (!isAdmin) {
+      const currentHour = new Date().getHours();
+      if (currentHour < 10) {
+        throw new UnauthorizedException("Employee login is allowed only during shift hours (10:00 AM - 7:00 PM)");
+      }
+    }
+
     await this.authRepository.updateLastLogin(user.id);
     this.logger.log(`User '${user.id}' logged in`);
+
+    // Log Activity with Employee Name
+    await this.activityService.log(
+      user.companyId,
+      user.id,
+      "user_login",
+      `Employee ${user.firstName} ${user.lastName || ''} logged into the system`
+    );
+
     return this.createSession(user);
+  }
+
+  async logout(companyId: string, userId: string): Promise<void> {
+    const user = await this.authRepository.findById(userId);
+    if (user) {
+      const roleName = (typeof user.role === 'string' ? user.role : user.role?.name || '').toUpperCase();
+      const isAdmin = ['ADMINISTRATOR', 'ADMIN'].includes(roleName);
+      if (!isAdmin) {
+        const currentHour = new Date().getHours();
+        if (currentHour < 19) {
+          throw new BadRequestException("Early logout is not allowed before 7:00 PM (Shift ends at 7:00 PM)");
+        }
+      }
+
+      await this.activityService.log(
+        companyId,
+        userId,
+        "user_logout",
+        `Employee ${user.firstName} ${user.lastName || ''} logged out of the system`
+      );
+    }
+    await this.authRepository.updateRefreshToken(userId, null);
+    this.logger.log(`User '${userId}' logged out`);
   }
 
   async refresh(refreshToken: string): Promise<AuthDataEntity> {
@@ -69,11 +115,6 @@ export class AuthService {
     }
     this.assertActive(user);
     return this.createSession(user);
-  }
-
-  async logout(userId: string): Promise<void> {
-    await this.authRepository.updateRefreshToken(userId, null);
-    this.logger.log(`User '${userId}' logged out`);
   }
 
   getCurrentUser(user: AuthUser): AuthUserEntity {

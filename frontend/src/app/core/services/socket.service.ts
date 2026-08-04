@@ -20,10 +20,16 @@ export class SocketService {
 
     let url = 'http://localhost:3000';
     if (typeof window !== 'undefined') {
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        url = 'https://crm-rfyq.onrender.com';
+      const host = window.location.hostname;
+      if (host !== 'localhost' && host !== '127.0.0.1') {
+        if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+          url = `http://${host}:3000`;
+        } else {
+          url = 'https://crm-rfyq.onrender.com';
+        }
       }
     }
+
 
     this.socket = io(url, {
       query: { token },
@@ -59,4 +65,12 @@ export class SocketService {
       };
     });
   }
+
+  emit(event: string, data?: any): void {
+    if (!this.socket) {
+      this.connect();
+    }
+    this.socket?.emit(event, data);
+  }
 }
+

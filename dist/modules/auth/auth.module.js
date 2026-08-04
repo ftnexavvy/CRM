@@ -19,6 +19,7 @@ const auth_repository_1 = require("./repositories/auth.repository");
 const auth_service_1 = require("./services/auth.service");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const refresh_strategy_1 = require("./strategies/refresh.strategy");
+const activity_module_1 = require("../activity/activity.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -27,6 +28,7 @@ exports.AuthModule = AuthModule = __decorate([
         imports: [
             config_1.ConfigModule,
             passport_1.PassportModule,
+            (0, common_1.forwardRef)(() => activity_module_1.ActivityModule),
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],

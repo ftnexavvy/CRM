@@ -1,0 +1,237 @@
+<div class="page-container">
+  @if (!authService.isAdminUser()) {
+  <div class="card p-5 text-center style-restricted"
+    style="margin-top: 40px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">
+    <div style="font-size: 3rem; margin-bottom: 10px;">🔒</div>
+    <h2 style="color: #ef4444; margin-bottom: 8px;">Access Restricted</h2>
+    <p style="color: var(--text-color, #64748b);">The Client Posts & Content Dashboard is accessible exclusively by
+      Administrators.</p>
+  </div>
+  } @else {
+
+  @if (loading()) {
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading client posts & content...</p>
+  </div>
+
+  } @else if (!selectedClient()) {
+  <!-- ════════════════ VIEW 1: CLIENT SELECTION ════════════════ -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Client Content Dashboard</h1>
+      <p class="page-subtitle">Select a client below to view monthly post & reel metrics, published deliverables, and
+        status details.</p>
+    </div>
+  </div>
+
+  @if (clientSummaries().length === 0) {
+  <div class="empty-state">
+    <div class="empty-icon">📝</div>
+    <h3>No Client Content Found</h3>
+    <p>There are no content posts or reels scheduled for any clients yet.</p>
+  </div>
+  } @else {
+  <div
+    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 20px;">
+    @for (c of clientSummaries(); track c.clientId) {
+    <div class="card client-post-card" (click)="selectClient(c)"
+      style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border-radius: 12px; padding: 20px; border: 1px solid var(--border-color, #e2e8f0); display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <span class="client-tag"
+              style="font-size: 0.72rem; color: #4f46e5; font-weight: 700; text-transform: uppercase;">CLIENT</span>
+            <h3 style="margin: 4px 0 0 0; font-size: 1.25rem; font-weight: 700; color: var(--heading-color, #1e293b);">
+              {{ c.clientName }}</h3>
+          </div>
+          <span
+            style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700;">
+            {{ c.tasks.length }} Deliverable(s)
+          </span>
+        </div>
+
+        <!-- Monthly Metrics Mini Grid -->
+        <div
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; margin-bottom: 15px; background: var(--bg-color-alt, #f8fafc); padding: 12px; border-radius: 8px;">
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">📢 Posts</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">{{ c.totalPosts }}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">🎬 Reels</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">{{ c.totalReels }}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: #10b981;">✅ Completed</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #10b981;">{{ c.completedCount }}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: #f59e0b;">⏳ Pending</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #f59e0b;">{{ c.pendingCount }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="display: flex; justify-content: flex-end; align-items: center; font-size: 0.85rem; font-weight: 600; color: #4f46e5; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px;">
+        View Content Breakdown ➔
+      </div>
+    </div>
+    }
+  </div>
+  }
+
+  } @else {
+  <!-- ════════════════ VIEW 2: SELECTED CLIENT DETAILS ════════════════ -->
+  <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <button class="btn btn-sm btn-secondary" (click)="clearSelectedClient()" style="margin-bottom: 10px;">
+        ← Back to All Clients
+      </button>
+      <h1 class="page-title">{{ selectedClient()?.clientName }} — Content Monthly Summary</h1>
+      <p class="page-subtitle">Monthly breakdown of posts, reels, completed status, and detailed publish reports.</p>
+    </div>
+  </div>
+
+  <!-- Stat Cards Grid -->
+  <div
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 15px; margin-bottom: 25px;">
+    <div class="card" style="padding: 16px; border-left: 4px solid #4f46e5; border-radius: 8px;">
+      <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">📢 TOTAL POSTS</div>
+      <div style="font-size: 1.6rem; font-weight: 800; color: #4f46e5; margin-top: 4px;">{{ selectedClient()?.totalPosts
+        }}</div>
+    </div>
+    <div class="card" style="padding: 16px; border-left: 4px solid #8b5cf6; border-radius: 8px;">
+      <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">🎬 TOTAL REELS</div>
+      <div style="font-size: 1.6rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">{{ selectedClient()?.totalReels
+        }}</div>
+    </div>
+    <div class="card" style="padding: 16px; border-left: 4px solid #10b981; border-radius: 8px;">
+      <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">✅ COMPLETED</div>
+      <div style="font-size: 1.6rem; font-weight: 800; color: #10b981; margin-top: 4px;">{{
+        selectedClient()?.completedCount }}</div>
+    </div>
+    <div class="card" style="padding: 16px; border-left: 4px solid #f59e0b; border-radius: 8px;">
+      <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">⏳ PENDING</div>
+      <div style="font-size: 1.6rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">{{
+        selectedClient()?.pendingCount }}</div>
+    </div>
+  </div>
+
+  <!-- Filter Buttons -->
+  <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+    <button class="btn btn-sm" [class.btn-primary]="filterStatus() === 'ALL'"
+      [class.btn-secondary]="filterStatus() !== 'ALL'" (click)="filterStatus.set('ALL')">All Content</button>
+    <button class="btn btn-sm" [class.btn-primary]="filterStatus() === 'POSTS'"
+      [class.btn-secondary]="filterStatus() !== 'POSTS'" (click)="filterStatus.set('POSTS')">📢 Posts Only</button>
+    <button class="btn btn-sm" [class.btn-primary]="filterStatus() === 'REELS'"
+      [class.btn-secondary]="filterStatus() !== 'REELS'" (click)="filterStatus.set('REELS')">🎬 Reels Only</button>
+    <button class="btn btn-sm" [class.btn-primary]="filterStatus() === 'COMPLETED'"
+      [class.btn-secondary]="filterStatus() !== 'COMPLETED'" (click)="filterStatus.set('COMPLETED')">✅
+      Completed</button>
+    <button class="btn btn-sm" [class.btn-primary]="filterStatus() === 'PENDING'"
+      [class.btn-secondary]="filterStatus() !== 'PENDING'" (click)="filterStatus.set('PENDING')">⏳ Pending</button>
+  </div>
+
+  <!-- Content Tasks Grid -->
+  @if (filteredClientTasks().length === 0) {
+  <div class="empty-state">
+    <p>No content deliverables match the selected filter.</p>
+  </div>
+  } @else {
+  <div class="posts-grid"
+    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;">
+    @for (post of filteredClientTasks(); track post.id) {
+    <div class="card post-card" [class.completed]="isCompleted(post)"
+      style="border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--border-color, #e2e8f0);">
+      <div>
+        <!-- Top Status Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+            @if (post.publishedPlatforms && post.publishedPlatforms.length > 0) {
+            @for (plat of post.publishedPlatforms; track plat) {
+            <span class="platform-badge"
+              style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; font-weight: 600;">
+              {{ plat }}
+            </span>
+            }
+            } @else {
+            <span class="platform-badge" [style.color]="getTaskPlatform(post).color"
+              style="font-size: 0.75rem; font-weight: 600;">
+              {{ getTaskPlatform(post).icon }} {{ getTaskPlatform(post).name }}
+            </span>
+            }
+          </div>
+          <span class="status-badge" [class]="'status-' + post.status.toLowerCase()">{{ post.status | formatEnum
+            }}</span>
+        </div>
+
+        <!-- Title & Scheduled/Published Date -->
+        <h3 class="post-title"
+          style="font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: var(--heading-color, #1e293b);">{{
+          post.title }}</h3>
+
+        @if (isCompleted(post)) {
+        <div
+          style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+          <span>✅ Completed / Published:</span>
+          <span>{{ post.updatedAt | date:'d MMM yyyy, h:mm a' }}</span>
+        </div>
+        } @else if (post.dueDate) {
+        <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">
+          🗓 Due Date: {{ post.dueDate | date:'d MMM yyyy' }}
+        </div>
+        }
+
+        @if (post.description) {
+        <p class="post-desc"
+          style="font-size: 0.88rem; color: var(--text-color, #475569); line-height: 1.4; margin-bottom: 12px; white-space: pre-wrap;">
+          {{ post.description }}</p>
+        }
+
+        <!-- Attachments / Designs Preview -->
+        @if (post.attachments && post.attachments.length > 0) {
+        <div
+          style="margin-top: 10px; margin-bottom: 10px; background: var(--bg-color-alt, #f8fafc); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem;">
+          <strong style="color: #4f46e5;">📎 Attached Media / Designs ({{ post.attachments.length }}):</strong>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+            @for (att of post.attachments; track att.id) {
+            <a [href]="att.url" target="_blank" style="color: #4f46e5; font-size: 0.78rem; text-decoration: underline;">
+              {{ att.filename || 'View File' }}
+            </a>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- Comments Count -->
+        @if (post.comments && post.comments.length > 0) {
+        <div style="font-size: 0.78rem; color: #64748b; margin-top: 6px;">
+          💬 {{ post.comments.length }} comment(s) / revision note(s)
+        </div>
+        }
+      </div>
+
+      <!-- Card Footer -->
+      <div class="post-footer"
+        style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.06);">
+        <div class="assignee" style="font-size: 0.8rem; color: #64748b;">
+          @if (post.assignedTo) {
+          <span>👤 {{ post.assignedTo.firstName }} {{ post.assignedTo.lastName || '' }}</span>
+          } @else {
+          <span class="unassigned">Unassigned</span>
+          }
+        </div>
+        <a [routerLink]="['/workflows']" [queryParams]="{ id: post.workflowId }" class="btn btn-sm btn-outline">
+          View Task ➔
+        </a>
+      </div>
+    </div>
+    }
+  </div>
+  }
+  }
+
+  }
+</div>

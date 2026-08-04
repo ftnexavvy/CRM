@@ -45,7 +45,7 @@ export class AuthController {
   @ApiOperation({ summary: "Invalidate the current refresh token" })
   @ApiOkResponse()
   async logout(@CurrentUser() user: AuthUser) {
-    await this.authService.logout(user.id);
+    await this.authService.logout(user.companyId, user.id);
     return this.response(true, "Logout successful", {});
   }
 

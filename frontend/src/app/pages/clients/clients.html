@@ -8,7 +8,7 @@
         <h3 class="value text-success">{{ metrics().total }}</h3>
       </div>
     </div>
-    
+
     <div class="metric-card card">
       <span class="metric-icon bg-accent">🆕</span>
       <div class="metric-data">
@@ -38,134 +38,180 @@
     <!-- Left Column: Clients List -->
     <div class="clients-list-card card">
       @if (loadingClients()) {
-        <div class="loader-container">
-          <div class="spinner"></div>
-        </div>
+      <div class="loader-container">
+        <div class="spinner"></div>
+      </div>
       } @else if (clients().length === 0) {
-        <div class="empty-state">
-          <p>No confirmed clients yet. Create a client or import from a won lead!</p>
-        </div>
+      <div class="empty-state">
+        <p>No confirmed clients yet. Create a client or import from a won lead!</p>
+      </div>
       } @else {
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Company / Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Services</th>
-                <th>Joined Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (client of clients(); track client.id) {
-                <tr [ngClass]="{ active: selectedClient()?.id === client.id }" (click)="selectClient(client)">
-                  <td class="bold-text">{{ client.name }}</td>
-                  <td>{{ client.email }}</td>
-                  <td>{{ client.phone || 'Not Provided' }}</td>
-                  <td>
-                    @if (client.services && client.services.length > 0) {
-                      <div class="service-tags">
-                        @for (cs of client.services; track cs.serviceId) {
-                          <span class="service-tag">{{ cs.service?.name }}</span>
-                        }
-                      </div>
-                    } @else {
-                      <span class="muted-text">No services</span>
-                    }
-                  </td>
-                  <td>{{ client.createdAt | date:'mediumDate' }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Company / Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Services</th>
+              <th>Joined Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (client of clients(); track client.id) {
+            <tr [ngClass]="{ active: selectedClient()?.id === client.id }" (click)="selectClient(client)">
+              <td class="bold-text">{{ client.name }}</td>
+              <td>{{ maskEmail(client.email) }}</td>
+              <td>
+                {{ maskPhone(client.phone) }}
+                @if (client.phone && authService.isAdminUser()) {
+                <a [href]="'tel:' + client.phone" class="btn-call-mini ml-1" (click)="$event.stopPropagation()"
+                  title="Call Client via SIM">📞</a>
+                }
+              </td>
+
+
+              <td>
+                @if (client.services && client.services.length > 0) {
+                <div class="service-tags">
+                  @for (cs of client.services; track cs.serviceId) {
+                  <span class="service-tag">{{ cs.service?.name }}</span>
+                  }
+                </div>
+                } @else {
+                <span class="muted-text">No services</span>
+                }
+              </td>
+              <td>{{ client.createdAt | date:'mediumDate' }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
       }
     </div>
 
     <!-- Right Column: Client details panel -->
     <div class="clients-details-panel">
       @if (!selectedClient()) {
-        <div class="no-selection-card card">
-          <div class="no-selection-icon">⭐</div>
-          <h3>Select a Client to View Details</h3>
-          <p>Click on any client in the directory to view contact info, services, and account details.</p>
-        </div>
+      <div class="no-selection-card card">
+        <div class="no-selection-icon">⭐</div>
+        <h3>Select a Client to View Details</h3>
+        <p>Click on any client in the directory to view contact info, services, and account details.</p>
+      </div>
       } @else {
-        <div class="details-layout card">
-          <div class="detail-header">
-            <div>
+      <div class="details-layout card">
+        <div class="detail-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
               <span class="client-tag">CLIENT ACCOUNT</span>
-              <h2>{{ selectedClient().name }}</h2>
-              <span class="client-time">Joined {{ selectedClient().createdAt | date:'mediumDate' }}</span>
+              <span class="badge" [ngClass]="(selectedClient().status || 'ACTIVE') | lowercase">
+                {{ selectedClient().status || 'ACTIVE' }}
+              </span>
             </div>
+            <h2>{{ selectedClient().name }}</h2>
+            <span class="client-time">Joined {{ selectedClient().createdAt | date:'mediumDate' }}</span>
           </div>
-
-          <!-- Services block -->
-          @if (selectedClient().services && selectedClient().services.length > 0) {
-            <div class="details-content-block">
-              <h3>🎯 Active Services</h3>
-              <div class="service-detail-list">
-                @for (cs of selectedClient().services; track cs.serviceId) {
-                  <div class="service-detail-item">
-                    <div class="svc-name">{{ cs.service?.name }}</div>
-                    @if (cs.service?.owner) {
-                      <div class="svc-owner">👤 {{ cs.service.owner.firstName }} {{ cs.service.owner.lastName }}</div>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
+          @if (authService.isAdminUser()) {
+          <div style="display: flex; gap: 6px;">
+            @if (selectedClient().status === 'PAUSED') {
+            <button class="btn btn-sm btn-success" (click)="onResumeServices()">▶ Resume Services</button>
+            } @else {
+            <button class="btn btn-sm btn-warning" (click)="openPauseModal()">⏸ Pause Services</button>
+            }
+          </div>
           }
+        </div>
 
-          <!-- Contact info block -->
-          <div class="details-content-block">
-            <h3>Contact Information</h3>
-            <div class="info-row">
-              <span>Email Address:</span>
-              <strong>{{ selectedClient().email }}</strong>
+        <!-- Billing & Service Pause Info -->
+        <div class="details-content-block"
+          style="background: rgba(79, 70, 229, 0.05); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2); margin-top: 15px; margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="color: #4f46e5; font-size: 0.9rem;">📅 Next Billing Cycle Date:</strong>
+              <span style="font-weight: 700; margin-left: 6px; font-size: 0.95rem;">
+                {{ getNextBillingDate(selectedClient()) | date:'d MMMM yyyy' }}
+              </span>
             </div>
-            <div class="info-row">
-              <span>Phone Number:</span>
-              <strong>{{ selectedClient().phone || 'Not Provided' }}</strong>
-            </div>
-            <div class="info-row">
-              <span>Website:</span>
-              <strong>
-                @if (selectedClient().website) {
-                  <a [href]="selectedClient().website" target="_blank">{{ selectedClient().website }}</a>
-                } @else {
-                  Not Provided
-                }
-              </strong>
-            </div>
-            <div class="info-row">
-              <span>Business Address:</span>
-              <strong>{{ selectedClient().address || 'Not Provided' }}</strong>
-            </div>
+            @if (selectedClient().status === 'PAUSED') {
+            <span style="color: #f59e0b; font-weight: 600; font-size: 0.85rem;">
+              ⏸ Services Paused (+{{ selectedClient().pauseDays || 0 }} days extended)
+            </span>
+            }
+          </div>
+          @if (selectedClient().status === 'PAUSED' && selectedClient().pauseReason) {
+          <div style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">
+            Reason: "{{ selectedClient().pauseReason }}"
+          </div>
+          }
+        </div>
 
-            <div class="notes-box">
-              <h3>Internal Account Notes</h3>
-              <p>{{ selectedClient().notes || 'No account notes added yet.' }}</p>
+        <!-- Services block -->
+        @if (selectedClient().services && selectedClient().services.length > 0) {
+        <div class="details-content-block">
+          <h3>🎯 Active Services</h3>
+          <div class="service-detail-list">
+            @for (cs of selectedClient().services; track cs.serviceId) {
+            <div class="service-detail-item">
+              <div class="svc-name">{{ cs.service?.name }}</div>
+              @if (cs.service?.owner) {
+              <div class="svc-owner">👤 {{ cs.service.owner.firstName }} {{ cs.service.owner.lastName }}</div>
+              }
             </div>
-
-            <!-- Workflow action -->
-            <div class="mt-4 p-4 border rounded bg-light">
-              <h3 class="mb-2">Automations</h3>
-              <button class="btn btn-primary" (click)="generateWorkflow(selectedClient().id)">
-                🚀 Generate & Auto Assign Workflow
-              </button>
-              <p class="text-muted small mt-2">This will calculate deliverables and automatically generate and assign tasks for selected services.</p>
-            </div>
-
-            <!-- Delete action -->
-            <div class="danger-zone mt-4">
-              <button class="btn btn-danger btn-sm" (click)="deleteClient(selectedClient().id)">
-                Delete Client Account
-              </button>
-            </div>
+            }
           </div>
         </div>
+        }
+
+        <!-- Contact info block -->
+        <div class="details-content-block">
+          <h3>Contact Information</h3>
+          <div class="info-row">
+            <span>Email Address:</span>
+            <strong>{{ maskEmail(selectedClient().email) }}</strong>
+          </div>
+          <div class="info-row">
+            <span>Phone Number:</span>
+            <strong>{{ maskPhone(selectedClient().phone) }}</strong>
+          </div>
+          <div class="info-row">
+            <span>Website:</span>
+            <strong>
+              @if (selectedClient().website) {
+              <a [href]="selectedClient().website" target="_blank">{{ selectedClient().website }}</a>
+              } @else {
+              Not Provided
+              }
+            </strong>
+          </div>
+          <div class="info-row">
+            <span>Business Address:</span>
+            <strong>{{ selectedClient().address || 'Not Provided' }}</strong>
+          </div>
+
+          <div class="notes-box">
+            <h3>Internal Account Notes</h3>
+            <p>{{ selectedClient().notes || 'No account notes added yet.' }}</p>
+          </div>
+
+          <!-- Workflow action -->
+          <div class="mt-4 p-4 border rounded bg-light">
+            <h3 class="mb-2">Automations</h3>
+            <button class="btn btn-primary" (click)="generateWorkflow(selectedClient().id)">
+              🚀 Generate & Auto Assign Workflow
+            </button>
+            <p class="text-muted small mt-2">This will calculate deliverables and automatically generate and assign
+              tasks for selected services.</p>
+          </div>
+
+          <!-- Delete action -->
+          <div class="danger-zone mt-4">
+            <button class="btn btn-danger btn-sm" (click)="deleteClient(selectedClient().id)">
+              Delete Client Account
+            </button>
+          </div>
+        </div>
+      </div>
       }
     </div>
   </div>
@@ -182,7 +228,8 @@
     <div class="form-grid">
       <div class="form-group">
         <label for="cEmail">Email Address *</label>
-        <input type="email" id="cEmail" name="cEmail" [(ngModel)]="newEmail" placeholder="e.g. billing@acme.com" required />
+        <input type="email" id="cEmail" name="cEmail" [(ngModel)]="newEmail" placeholder="e.g. billing@acme.com"
+          required />
       </div>
       <div class="form-group">
         <label for="cPhone">Phone Number</label>
@@ -197,153 +244,159 @@
 
     <div class="form-group">
       <label for="cAddress">Business Address</label>
-      <textarea id="cAddress" name="cAddress" [(ngModel)]="newAddress" rows="2" placeholder="Street, City, Zip..."></textarea>
+      <textarea id="cAddress" name="cAddress" [(ngModel)]="newAddress" rows="2"
+        placeholder="Street, City, Zip..."></textarea>
     </div>
 
     <div class="form-group">
       <label for="cNotes">Account Notes</label>
-      <textarea id="cNotes" name="cNotes" [(ngModel)]="newNotes" rows="2" placeholder="Important details or account background..."></textarea>
+      <textarea id="cNotes" name="cNotes" [(ngModel)]="newNotes" rows="2"
+        placeholder="Important details or account background..."></textarea>
     </div>
 
     <!-- Service Selection -->
     <div class="form-group">
       <label>🎯 Services (select all that apply)</label>
       @if (loadingServices()) {
-        <div class="services-loading">Loading services...</div>
+      <div class="services-loading">Loading services...</div>
       } @else if (services().length === 0) {
-        <div class="services-empty-hint">
-          ⚠️ No services configured yet. Go to <strong>Settings → Service Catalog</strong> to add services first.
-        </div>
+      <div class="services-empty-hint">
+        ⚠️ No services configured yet. Go to <strong>Settings → Service Catalog</strong> to add services first.
+      </div>
       } @else {
-        <div class="service-checkboxes">
-          @for (svc of services(); track svc.id) {
-            <label class="service-checkbox-label" [ngClass]="{ selected: isServiceSelected(svc.id, newServiceIds) }">
-              <input type="checkbox" [checked]="isServiceSelected(svc.id, newServiceIds)" (change)="toggleNewService(svc.id)" />
-              <span class="svc-label-name">{{ svc.name }}</span>
-              @if (svc.owner) {
-                <span class="svc-label-owner">→ {{ svc.owner.firstName }}</span>
-              }
-            </label>
+      <div class="service-checkboxes">
+        @for (svc of services(); track svc.id) {
+        <label class="service-checkbox-label" [ngClass]="{ selected: isServiceSelected(svc.id, newServiceIds) }">
+          <input type="checkbox" [checked]="isServiceSelected(svc.id, newServiceIds)"
+            (change)="toggleNewService(svc.id)" />
+          <span class="svc-label-name">{{ svc.name }}</span>
+          @if (svc.owner) {
+          <span class="svc-label-owner">→ {{ svc.owner.firstName }}</span>
           }
-        </div>
+        </label>
+        }
+      </div>
       }
     </div>
 
     @if (isSmmSelected(newServiceIds)) {
-      <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
-        <h4 class="mb-3">Social Media Management Configuration</h4>
-        
-        <div class="form-group mb-3">
-          <label>Platforms</label>
-          <div class="d-flex flex-wrap gap-2">
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.facebook" name="smm_fb"> Facebook</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.instagram" name="smm_ig"> Instagram</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.linkedin" name="smm_li"> LinkedIn</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.twitter" name="smm_tw"> Twitter (X)</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.youtube" name="smm_yt"> YouTube</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.pinterest" name="smm_pi"> Pinterest</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.threads" name="smm_th"> Threads</label>
-          </div>
-        </div>
+    <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
+      <h4 class="mb-3">Social Media Management Configuration</h4>
 
-        <div class="form-grid mb-3">
-          <div class="form-group">
-            <label>Number of Static Posts</label>
-            <input type="number" class="form-control" [(ngModel)]="smmStaticPosts" name="smm_static" min="0">
-          </div>
-          <div class="form-group">
-            <label>Number of Carousel Posts</label>
-            <input type="number" class="form-control" [(ngModel)]="smmCarouselPosts" name="smm_carousel" min="0">
-          </div>
-          <div class="form-group">
-            <label>Number of Reels</label>
-            <input type="number" class="form-control" [(ngModel)]="smmReels" name="smm_reels" min="0">
-          </div>
-          <div class="form-group">
-            <label>Number of Stories</label>
-            <input type="number" class="form-control" [(ngModel)]="smmStories" name="smm_stories" min="0">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Other Options</label>
-          <div class="d-flex flex-column gap-2">
-            <label><input type="checkbox" [(ngModel)]="smmMonthlyCalendar" name="smm_calendar"> Monthly Content Calendar</label>
-            <label><input type="checkbox" [(ngModel)]="smmCaptionWriting" name="smm_caption"> Caption Writing</label>
-            <label><input type="checkbox" [(ngModel)]="smmMonthlyReport" name="smm_report"> Monthly Report</label>
-            <label><input type="checkbox" [(ngModel)]="smmClientApproval" name="smm_approval"> Client Approval Required</label>
-          </div>
+      <div class="form-group mb-3">
+        <label>Platforms</label>
+        <div class="d-flex flex-wrap gap-2">
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.facebook" name="smm_fb"> Facebook</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.instagram" name="smm_ig"> Instagram</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.linkedin" name="smm_li"> LinkedIn</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.twitter" name="smm_tw"> Twitter (X)</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.youtube" name="smm_yt"> YouTube</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.pinterest" name="smm_pi"> Pinterest</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.threads" name="smm_th"> Threads</label>
         </div>
       </div>
+
+      <div class="form-grid mb-3">
+        <div class="form-group">
+          <label>Number of Static Posts</label>
+          <input type="number" class="form-control" [(ngModel)]="smmStaticPosts" name="smm_static" min="0">
+        </div>
+        <div class="form-group">
+          <label>Number of Carousel Posts</label>
+          <input type="number" class="form-control" [(ngModel)]="smmCarouselPosts" name="smm_carousel" min="0">
+        </div>
+        <div class="form-group">
+          <label>Number of Reels</label>
+          <input type="number" class="form-control" [(ngModel)]="smmReels" name="smm_reels" min="0">
+        </div>
+        <div class="form-group">
+          <label>Number of Stories</label>
+          <input type="number" class="form-control" [(ngModel)]="smmStories" name="smm_stories" min="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Other Options</label>
+        <div class="d-flex flex-column gap-2">
+          <label><input type="checkbox" [(ngModel)]="smmMonthlyCalendar" name="smm_calendar"> Monthly Content
+            Calendar</label>
+          <label><input type="checkbox" [(ngModel)]="smmCaptionWriting" name="smm_caption"> Caption Writing</label>
+          <label><input type="checkbox" [(ngModel)]="smmMonthlyReport" name="smm_report"> Monthly Report</label>
+          <label><input type="checkbox" [(ngModel)]="smmClientApproval" name="smm_approval"> Client Approval
+            Required</label>
+        </div>
+      </div>
+    </div>
     }
 
     @if (isGraphicsSelected(newServiceIds)) {
-      <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
-        <h4 class="mb-3">🎨 Graphics Design Configuration</h4>
-        
-        <div class="form-group mb-3">
-          <label class="d-flex align-items-center gap-2">
-            <input type="checkbox" [(ngModel)]="graphicsImportSmm" name="gfx_import_smm">
-            <strong>Import From Social Media ☑️ (Recommended)</strong>
-          </label>
-          <small class="form-hint d-block text-muted mt-1">
-            Automatically reuses deliverable counts (Posts: {{ smmStaticPosts }}, Carousels: {{ smmCarouselPosts }}, Stories: {{ smmStories }}, Reel Covers: {{ smmReels }}) configured in Social Media.
-          </small>
-        </div>
+    <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
+      <h4 class="mb-3">🎨 Graphics Design Configuration</h4>
 
-        @if (!graphicsImportSmm) {
-          <div class="form-grid mb-3">
-            <div class="form-group">
-              <label>Static Posts</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsStaticPosts" name="gfx_static" min="0">
-            </div>
-            <div class="form-group">
-              <label>Carousel Posts</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsCarouselPosts" name="gfx_carousel" min="0">
-            </div>
-            <div class="form-group">
-              <label>Stories</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsStories" name="gfx_stories" min="0">
-            </div>
-            <div class="form-group">
-              <label>Banners</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsBanners" name="gfx_banners" min="0">
-            </div>
-            <div class="form-group">
-              <label>Brochures</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsBrochures" name="gfx_brochures" min="0">
-            </div>
-            <div class="form-group">
-              <label>Flyers</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsFlyers" name="gfx_flyers" min="0">
-            </div>
-            <div class="form-group">
-              <label>Logos</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsLogos" name="gfx_logos" min="0">
-            </div>
-            <div class="form-group">
-              <label>Other Creatives</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsOtherCreatives" name="gfx_others" min="0">
-            </div>
-          </div>
-        }
+      <div class="form-group mb-3">
+        <label class="d-flex align-items-center gap-2">
+          <input type="checkbox" [(ngModel)]="graphicsImportSmm" name="gfx_import_smm">
+          <strong>Import From Social Media ☑️ (Recommended)</strong>
+        </label>
+        <small class="form-hint d-block text-muted mt-1">
+          Automatically reuses deliverable counts (Posts: {{ smmStaticPosts }}, Carousels: {{ smmCarouselPosts }},
+          Stories: {{ smmStories }}, Reel Covers: {{ smmReels }}) configured in Social Media.
+        </small>
       </div>
+
+      @if (!graphicsImportSmm) {
+      <div class="form-grid mb-3">
+        <div class="form-group">
+          <label>Static Posts</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsStaticPosts" name="gfx_static" min="0">
+        </div>
+        <div class="form-group">
+          <label>Carousel Posts</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsCarouselPosts" name="gfx_carousel" min="0">
+        </div>
+        <div class="form-group">
+          <label>Stories</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsStories" name="gfx_stories" min="0">
+        </div>
+        <div class="form-group">
+          <label>Banners</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsBanners" name="gfx_banners" min="0">
+        </div>
+        <div class="form-group">
+          <label>Brochures</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsBrochures" name="gfx_brochures" min="0">
+        </div>
+        <div class="form-group">
+          <label>Flyers</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsFlyers" name="gfx_flyers" min="0">
+        </div>
+        <div class="form-group">
+          <label>Logos</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsLogos" name="gfx_logos" min="0">
+        </div>
+        <div class="form-group">
+          <label>Other Creatives</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsOtherCreatives" name="gfx_others" min="0">
+        </div>
+      </div>
+      }
+    </div>
     }
 
     @if (isPhotoVideoSelected(newServiceIds)) {
-      <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
-        <h4 class="mb-3">📸 Photography & Video Shoot Configuration</h4>
-        <div class="form-grid mb-3">
-          <div class="form-group">
-            <label>Number of Photography Sessions</label>
-            <input type="number" class="form-control" [(ngModel)]="photoSessions" name="pv_photo" min="0">
-          </div>
-          <div class="form-group">
-            <label>Number of Video Shoot Sessions</label>
-            <input type="number" class="form-control" [(ngModel)]="videoSessions" name="pv_video" min="0">
-          </div>
+    <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
+      <h4 class="mb-3">📸 Photography & Video Shoot Configuration</h4>
+      <div class="form-grid mb-3">
+        <div class="form-group">
+          <label>Number of Photography Sessions</label>
+          <input type="number" class="form-control" [(ngModel)]="photoSessions" name="pv_photo" min="0">
+        </div>
+        <div class="form-group">
+          <label>Number of Video Shoot Sessions</label>
+          <input type="number" class="form-control" [(ngModel)]="videoSessions" name="pv_video" min="0">
         </div>
       </div>
+    </div>
     }
 
     <div class="modal-actions">
@@ -363,7 +416,7 @@
       <select class="form-control" [(ngModel)]="importLeadId" name="importLeadId" required>
         <option value="">— Choose a lead —</option>
         @for (lead of leads(); track lead.id) {
-          <option [value]="lead.id">{{ lead.name }} ({{ lead.email || 'no email' }}) – {{ lead.status }}</option>
+        <option [value]="lead.id">{{ lead.name }} ({{ lead.email || 'no email' }}) – {{ lead.status }}</option>
         }
       </select>
       <small class="form-hint">Lead data (name, email, phone, notes) will be auto-filled.</small>
@@ -383,141 +436,145 @@
     <div class="form-group">
       <label>🎯 Services for this client</label>
       @if (loadingServices()) {
-        <div class="services-loading">Loading services...</div>
+      <div class="services-loading">Loading services...</div>
       } @else if (services().length === 0) {
-        <div class="services-empty-hint">
-          ⚠️ No services configured yet. Go to <strong>Settings → Service Catalog</strong> to add services first.
-        </div>
+      <div class="services-empty-hint">
+        ⚠️ No services configured yet. Go to <strong>Settings → Service Catalog</strong> to add services first.
+      </div>
       } @else {
-        <div class="service-checkboxes">
-          @for (svc of services(); track svc.id) {
-            <label class="service-checkbox-label" [ngClass]="{ selected: isServiceSelected(svc.id, importServiceIds) }">
-              <input type="checkbox" [checked]="isServiceSelected(svc.id, importServiceIds)" (change)="toggleImportService(svc.id)" />
-              <span class="svc-label-name">{{ svc.name }}</span>
-              @if (svc.owner) {
-                <span class="svc-label-owner">→ {{ svc.owner.firstName }}</span>
-              }
-            </label>
+      <div class="service-checkboxes">
+        @for (svc of services(); track svc.id) {
+        <label class="service-checkbox-label" [ngClass]="{ selected: isServiceSelected(svc.id, importServiceIds) }">
+          <input type="checkbox" [checked]="isServiceSelected(svc.id, importServiceIds)"
+            (change)="toggleImportService(svc.id)" />
+          <span class="svc-label-name">{{ svc.name }}</span>
+          @if (svc.owner) {
+          <span class="svc-label-owner">→ {{ svc.owner.firstName }}</span>
           }
-        </div>
+        </label>
+        }
+      </div>
       }
     </div>
 
     @if (isSmmSelected(importServiceIds)) {
-      <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
-        <h4 class="mb-3">Social Media Management Configuration</h4>
-        
-        <div class="form-group mb-3">
-          <label>Platforms</label>
-          <div class="d-flex flex-wrap gap-2">
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.facebook" name="smm_fb_imp"> Facebook</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.instagram" name="smm_ig_imp"> Instagram</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.linkedin" name="smm_li_imp"> LinkedIn</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.twitter" name="smm_tw_imp"> Twitter (X)</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.youtube" name="smm_yt_imp"> YouTube</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.pinterest" name="smm_pi_imp"> Pinterest</label>
-            <label><input type="checkbox" [(ngModel)]="smmPlatforms.threads" name="smm_th_imp"> Threads</label>
-          </div>
-        </div>
+    <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
+      <h4 class="mb-3">Social Media Management Configuration</h4>
 
-        <div class="form-grid mb-3">
-          <div class="form-group">
-            <label>Number of Static Posts</label>
-            <input type="number" class="form-control" [(ngModel)]="smmStaticPosts" name="smm_static_imp" min="0">
-          </div>
-          <div class="form-group">
-            <label>Number of Carousel Posts</label>
-            <input type="number" class="form-control" [(ngModel)]="smmCarouselPosts" name="smm_carousel_imp" min="0">
-          </div>
-          <div class="form-group">
-            <label>Number of Reels</label>
-            <input type="number" class="form-control" [(ngModel)]="smmReels" name="smm_reels_imp" min="0">
-          </div>
-          <div class="form-group">
-            <label>Number of Stories</label>
-            <input type="number" class="form-control" [(ngModel)]="smmStories" name="smm_stories_imp" min="0">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Other Options</label>
-          <div class="d-flex flex-column gap-2">
-            <label><input type="checkbox" [(ngModel)]="smmMonthlyCalendar" name="smm_calendar_imp"> Monthly Content Calendar</label>
-            <label><input type="checkbox" [(ngModel)]="smmCaptionWriting" name="smm_caption_imp"> Caption Writing</label>
-            <label><input type="checkbox" [(ngModel)]="smmMonthlyReport" name="smm_report_imp"> Monthly Report</label>
-            <label><input type="checkbox" [(ngModel)]="smmClientApproval" name="smm_approval_imp"> Client Approval Required</label>
-          </div>
+      <div class="form-group mb-3">
+        <label>Platforms</label>
+        <div class="d-flex flex-wrap gap-2">
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.facebook" name="smm_fb_imp"> Facebook</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.instagram" name="smm_ig_imp"> Instagram</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.linkedin" name="smm_li_imp"> LinkedIn</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.twitter" name="smm_tw_imp"> Twitter (X)</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.youtube" name="smm_yt_imp"> YouTube</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.pinterest" name="smm_pi_imp"> Pinterest</label>
+          <label><input type="checkbox" [(ngModel)]="smmPlatforms.threads" name="smm_th_imp"> Threads</label>
         </div>
       </div>
+
+      <div class="form-grid mb-3">
+        <div class="form-group">
+          <label>Number of Static Posts</label>
+          <input type="number" class="form-control" [(ngModel)]="smmStaticPosts" name="smm_static_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Number of Carousel Posts</label>
+          <input type="number" class="form-control" [(ngModel)]="smmCarouselPosts" name="smm_carousel_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Number of Reels</label>
+          <input type="number" class="form-control" [(ngModel)]="smmReels" name="smm_reels_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Number of Stories</label>
+          <input type="number" class="form-control" [(ngModel)]="smmStories" name="smm_stories_imp" min="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Other Options</label>
+        <div class="d-flex flex-column gap-2">
+          <label><input type="checkbox" [(ngModel)]="smmMonthlyCalendar" name="smm_calendar_imp"> Monthly Content
+            Calendar</label>
+          <label><input type="checkbox" [(ngModel)]="smmCaptionWriting" name="smm_caption_imp"> Caption Writing</label>
+          <label><input type="checkbox" [(ngModel)]="smmMonthlyReport" name="smm_report_imp"> Monthly Report</label>
+          <label><input type="checkbox" [(ngModel)]="smmClientApproval" name="smm_approval_imp"> Client Approval
+            Required</label>
+        </div>
+      </div>
+    </div>
     }
 
     @if (isGraphicsSelected(importServiceIds)) {
-      <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
-        <h4 class="mb-3">🎨 Graphics Design Configuration</h4>
-        
-        <div class="form-group mb-3">
-          <label class="d-flex align-items-center gap-2">
-            <input type="checkbox" [(ngModel)]="graphicsImportSmm" name="gfx_import_smm_imp">
-            <strong>Import From Social Media ☑️ (Recommended)</strong>
-          </label>
-          <small class="form-hint d-block text-muted mt-1">
-            Automatically reuses deliverable counts (Posts: {{ smmStaticPosts }}, Carousels: {{ smmCarouselPosts }}, Stories: {{ smmStories }}, Reel Covers: {{ smmReels }}) configured in Social Media.
-          </small>
-        </div>
+    <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
+      <h4 class="mb-3">🎨 Graphics Design Configuration</h4>
 
-        @if (!graphicsImportSmm) {
-          <div class="form-grid mb-3">
-            <div class="form-group">
-              <label>Static Posts</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsStaticPosts" name="gfx_static_imp" min="0">
-            </div>
-            <div class="form-group">
-              <label>Carousel Posts</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsCarouselPosts" name="gfx_carousel_imp" min="0">
-            </div>
-            <div class="form-group">
-              <label>Stories</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsStories" name="gfx_stories_imp" min="0">
-            </div>
-            <div class="form-group">
-              <label>Banners</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsBanners" name="gfx_banners_imp" min="0">
-            </div>
-            <div class="form-group">
-              <label>Brochures</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsBrochures" name="gfx_brochures_imp" min="0">
-            </div>
-            <div class="form-group">
-              <label>Flyers</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsFlyers" name="gfx_flyers_imp" min="0">
-            </div>
-            <div class="form-group">
-              <label>Logos</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsLogos" name="gfx_logos_imp" min="0">
-            </div>
-            <div class="form-group">
-              <label>Other Creatives</label>
-              <input type="number" class="form-control" [(ngModel)]="graphicsOtherCreatives" name="gfx_others_imp" min="0">
-            </div>
-          </div>
-        }
+      <div class="form-group mb-3">
+        <label class="d-flex align-items-center gap-2">
+          <input type="checkbox" [(ngModel)]="graphicsImportSmm" name="gfx_import_smm_imp">
+          <strong>Import From Social Media ☑️ (Recommended)</strong>
+        </label>
+        <small class="form-hint d-block text-muted mt-1">
+          Automatically reuses deliverable counts (Posts: {{ smmStaticPosts }}, Carousels: {{ smmCarouselPosts }},
+          Stories: {{ smmStories }}, Reel Covers: {{ smmReels }}) configured in Social Media.
+        </small>
       </div>
+
+      @if (!graphicsImportSmm) {
+      <div class="form-grid mb-3">
+        <div class="form-group">
+          <label>Static Posts</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsStaticPosts" name="gfx_static_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Carousel Posts</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsCarouselPosts" name="gfx_carousel_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Stories</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsStories" name="gfx_stories_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Banners</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsBanners" name="gfx_banners_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Brochures</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsBrochures" name="gfx_brochures_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Flyers</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsFlyers" name="gfx_flyers_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Logos</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsLogos" name="gfx_logos_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Other Creatives</label>
+          <input type="number" class="form-control" [(ngModel)]="graphicsOtherCreatives" name="gfx_others_imp" min="0">
+        </div>
+      </div>
+      }
+    </div>
     }
 
     @if (isPhotoVideoSelected(importServiceIds)) {
-      <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
-        <h4 class="mb-3">📸 Photography & Video Shoot Configuration</h4>
-        <div class="form-grid mb-3">
-          <div class="form-group">
-            <label>Number of Photography Sessions</label>
-            <input type="number" class="form-control" [(ngModel)]="photoSessions" name="pv_photo_imp" min="0">
-          </div>
-          <div class="form-group">
-            <label>Number of Video Shoot Sessions</label>
-            <input type="number" class="form-control" [(ngModel)]="videoSessions" name="pv_video_imp" min="0">
-          </div>
+    <div class="smm-config-box p-3 border rounded mt-3 mb-3 bg-light">
+      <h4 class="mb-3">📸 Photography & Video Shoot Configuration</h4>
+      <div class="form-grid mb-3">
+        <div class="form-group">
+          <label>Number of Photography Sessions</label>
+          <input type="number" class="form-control" [(ngModel)]="photoSessions" name="pv_photo_imp" min="0">
+        </div>
+        <div class="form-group">
+          <label>Number of Video Shoot Sessions</label>
+          <input type="number" class="form-control" [(ngModel)]="videoSessions" name="pv_video_imp" min="0">
         </div>
       </div>
+    </div>
     }
 
     <div class="modal-actions">
@@ -525,6 +582,31 @@
       <button type="submit" class="btn btn-primary" [disabled]="submitting()">
         @if (submitting()) { Importing... } @else { Import as Client }
       </button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Modal: Pause Client Services -->
+<app-modal [title]="'⏸ Pause Services — ' + (selectedClient()?.name || '')" [visible]="showPauseModal"
+  (close)="showPauseModal = false">
+  <form (ngSubmit)="onPauseSubmit()">
+    <div class="form-group">
+      <label for="pauseDaysInput">Pause Duration (Number of Days) *</label>
+      <input type="number" id="pauseDaysInput" name="pauseDaysInput" [(ngModel)]="pauseDaysVal" min="1"
+        placeholder="e.g. 10" required />
+      <span class="input-helper">The client's next billing cycle date and active task due dates will automatically
+        extend by this number of days.</span>
+    </div>
+
+    <div class="form-group">
+      <label for="pauseReasonInput">Pause Reason (Optional)</label>
+      <textarea id="pauseReasonInput" name="pauseReasonInput" [(ngModel)]="pauseReasonVal" rows="3"
+        placeholder="e.g. Client requested 10 days pause"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="showPauseModal = false">Cancel</button>
+      <button type="submit" class="btn btn-warning" [disabled]="submitting()">Pause Services & Extend Billing</button>
     </div>
   </form>
 </app-modal>

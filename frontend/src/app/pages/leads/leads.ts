@@ -24,7 +24,7 @@ export class LeadsComponent implements OnInit {
   leads = signal<any[]>([]);
   employees = signal<any[]>([]);
   selectedLead = signal<any>(null);
-  
+
   loadingLeads = signal(false);
   submitting = signal(false);
 
@@ -67,7 +67,7 @@ export class LeadsComponent implements OnInit {
     const total = allLeads.length;
     const newLeads = allLeads.filter((l: any) => l.status === 'NEW').length;
     const wonLeads = allLeads.filter((l: any) => l.status === 'WON').length;
-    
+
     let conversionRate = 0;
     if (total > 0) {
       conversionRate = parseFloat(((wonLeads / total) * 100).toFixed(1));
@@ -92,7 +92,7 @@ export class LeadsComponent implements OnInit {
 
   loadInitialData(): void {
     this.loadLeads();
-    
+
     // Load active employees for assignment
     this.userService.all().subscribe(res => {
       if (res.success && Array.isArray(res.data)) {
@@ -107,7 +107,7 @@ export class LeadsComponent implements OnInit {
       next: (res) => {
         if (res.success && Array.isArray(res.data)) {
           this.leads.set(res.data);
-          
+
           // Re-select lead if one was active to keep details fresh
           const currentSelected = this.selectedLead();
           if (currentSelected) {

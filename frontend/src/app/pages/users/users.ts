@@ -32,6 +32,30 @@ export class UsersComponent implements OnInit {
   showEditModal = false;
   showStatusModal = false;
   showPasswordModal = false;
+  showHistoryModal = false;
+
+  // History modal state
+  selectedUserForHistory: any = null;
+  userLoginHistory = signal<any[]>([]);
+  loadingHistory = signal(false);
+
+  openHistoryModal(user: any): void {
+    this.selectedUserForHistory = user;
+    this.showHistoryModal = true;
+    this.loadingHistory.set(true);
+    this.userService.getLoginHistory(user.id).subscribe({
+      next: (res) => {
+        if (res.success && Array.isArray(res.data)) {
+          this.userLoginHistory.set(res.data);
+        }
+        this.loadingHistory.set(false);
+      },
+      error: () => {
+        this.loadingHistory.set(false);
+        this.toast.error('Failed to load login history');
+      }
+    });
+  }
 
   // Create form
   firstName = '';

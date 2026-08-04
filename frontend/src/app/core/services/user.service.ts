@@ -32,6 +32,10 @@ export class UserService {
     return this.http.patch<any>(`/api/v1/users/${id}/reset-password`, { password });
   }
 
+  getLoginHistory(id: string): Observable<any> {
+    return this.http.get<any>(`/api/v1/users/${id}/login-history`);
+  }
+
   delete(id: string): Observable<any> {
     return this.http.delete<any>(`/api/v1/users/${id}`);
   }

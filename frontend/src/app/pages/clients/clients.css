@@ -61,8 +61,13 @@
   border: 1px solid var(--border-color);
 }
 
-.metric-icon.bg-success { background-color: rgba(16, 185, 129, 0.15); }
-.metric-icon.bg-accent { background-color: rgba(139, 92, 246, 0.15); }
+.metric-icon.bg-success {
+  background-color: rgba(16, 185, 129, 0.15);
+}
+
+.metric-icon.bg-accent {
+  background-color: rgba(139, 92, 246, 0.15);
+}
 
 .metric-data {
   display: flex;
@@ -82,8 +87,13 @@
 }
 
 /* Colors override */
-.text-success { color: var(--success-color); }
-.text-accent { color: #a78bfa; }
+.text-success {
+  color: var(--success-color);
+}
+
+.text-accent {
+  color: #a78bfa;
+}
 
 /* Action Bar */
 .clients-action-bar {
@@ -196,11 +206,34 @@
   border-radius: 8px;
 }
 
-.svc-name { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
-.svc-owner { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+.svc-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
 
-.form-hint { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; display: block; }
-.form-control { width: 100%; padding: 0.5rem 0.75rem; background: var(--bg-secondary, rgba(255,255,255,0.05)); border: 1px solid var(--border-color, rgba(255,255,255,0.1)); border-radius: 8px; color: var(--text-primary, #fff); font-size: 0.9rem; }
+.svc-owner {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.form-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  display: block;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+}
 
 
 /* Main Grid Layout */
@@ -347,4 +380,16 @@ tbody tr.active td {
 .danger-zone {
   border-top: 1px dashed var(--border-color);
   padding-top: 20px;
+}
+
+padding: var(--space-4);
+font-size: 13px;
+color: var(--text-sub);
+line-height: 1.5;
+white-space: pre-wrap;
+flex: 1;
+}
+
+.w-full {
+  width: 100%;
 }

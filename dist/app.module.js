@@ -21,6 +21,7 @@ const activity_module_1 = require("./modules/activity/activity.module");
 const notification_module_1 = require("./modules/notifications/notification.module");
 const service_catalog_module_1 = require("./modules/services/service-catalog.module");
 const gateway_module_1 = require("./core/gateway/gateway.module");
+const announcement_module_1 = require("./modules/announcement/announcement.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -42,6 +43,7 @@ exports.AppModule = AppModule = __decorate([
             activity_module_1.ActivityModule,
             notification_module_1.NotificationModule,
             service_catalog_module_1.ServiceCatalogModule,
+            announcement_module_1.AnnouncementModule,
             gateway_module_1.GatewayModule,
         ],
     })

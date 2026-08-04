@@ -569,11 +569,13 @@
 
 /* Service Grid */
 .wf-service-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 18px;
-  overflow-y: auto;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 20px;
   padding-right: 4px;
+  padding-bottom: 15px;
+  /* Space for scrollbar */
 }
 
 /* Service Card */
@@ -585,6 +587,9 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 340px;
+  width: 340px;
+  flex-shrink: 0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -778,9 +783,10 @@
 
 .wsc-task-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 10px;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 9px 10px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-left: 3px solid transparent;
@@ -788,6 +794,14 @@
   font-size: 0.83rem;
   cursor: pointer;
   transition: all 0.15s ease;
+  gap: 8px;
+}
+
+.wsc-task-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
   gap: 6px;
 }
 

@@ -11,13 +11,19 @@ export const authInterceptor: HttpInterceptorFn = (
   const authService = inject(AuthService);
   const token = authService.accessToken;
 
-  // Prepend live API URL if in production
+  // Prepend local IP port 3000 or live API URL if remote
   let url = req.url;
   if (url.startsWith('/api/') && typeof window !== 'undefined') {
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      url = 'https://crm-rfyq.onrender.com' + url;
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+        url = `http://${host}:3000${url}`;
+      } else {
+        url = `https://crm-rfyq.onrender.com${url}`;
+      }
     }
   }
+
 
   let authReq = req.clone({ url });
 

@@ -140,6 +140,13 @@ export class AuthService {
     return this.permissions().includes(key);
   }
 
+  isAdminUser(): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+    const roleName = (typeof user.role === 'string' ? user.role : user.role?.name || '').toUpperCase();
+    return ['ADMINISTRATOR', 'ADMIN'].includes(roleName);
+  }
+
   private setSession(access: string, refresh: string): void {
     localStorage.setItem('crm_access_token', access);
     localStorage.setItem('crm_refresh_token', refresh);

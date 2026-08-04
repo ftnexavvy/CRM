@@ -31,6 +31,12 @@ export class GenerateTasksDto {
 }
 
 export class AssignTaskDto { @ApiProperty() @IsString() @Length(1, 191) assignedToId!: string; }
+
+export class UpdateTaskStatusDto {
+  @ApiProperty() @IsString() status!: string;
+  @ApiPropertyOptional() @IsOptional() @IsArray() @IsString({ each: true }) publishedPlatforms?: string[];
+}
+
 export class CreateTaskCommentDto { @ApiProperty() @IsString() @Length(1, 5000) content!: string; }
 export class CreateTaskAttachmentDto {
   @ApiProperty() @IsString() @Length(1, 255) fileName!: string;
