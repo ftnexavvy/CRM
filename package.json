@@ -2,7 +2,8 @@
   "scripts": {
     "start": "ts-node src/main.ts",
     "start:dev": "ts-node --transpile-only src/main.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma db push --accept-data-loss && tsc -p tsconfig.json",
+    "postinstall": "prisma generate",
     "start:prod": "node dist/main.js",
     "prisma": "prisma",
     "prisma:generate": "prisma generate",

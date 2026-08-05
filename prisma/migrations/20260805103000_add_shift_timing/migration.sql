@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "shiftTiming" TEXT DEFAULT '10:00 AM - 7:00 PM';
