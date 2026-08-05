@@ -2,7 +2,7 @@
   "scripts": {
     "start": "ts-node src/main.ts",
     "start:dev": "ts-node --transpile-only src/main.ts",
-    "build": "prisma db push --accept-data-loss && tsc -p tsconfig.json",
+    "build": "PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK=1 prisma db push --accept-data-loss && tsc -p tsconfig.json",
     "postinstall": "prisma generate",
     "start:prod": "node dist/main.js",
     "prisma": "prisma",
