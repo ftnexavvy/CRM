@@ -24,6 +24,7 @@
           <th>Email</th>
           <th>Designation</th>
           <th>Department</th>
+          <th>Shift Timing</th>
           <th>Role</th>
           <th>Status</th>
           <th>Actions</th>
@@ -43,6 +44,11 @@
           <td>{{ user.email }}</td>
           <td>{{ user.designation || 'Staff' }}</td>
           <td>{{ user.department || 'N/A' }}</td>
+          <td>
+            <span class="badge" style="background: rgba(59, 130, 246, 0.1); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.2); font-weight: 500;">
+              🕒 {{ user.shiftTiming || '10:00 AM - 7:00 PM' }}
+            </span>
+          </td>
           <td>
             <span class="role-tag">{{ getRoleName(user.roleId) }}</span>
           </td>
@@ -138,10 +144,20 @@
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="uDesignation">Designation / Job Title</label>
-      <input type="text" id="uDesignation" name="uDesignation" [(ngModel)]="designation"
-        placeholder="e.g. Lead Designer" />
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="uDesignation">Designation / Job Title</label>
+        <input type="text" id="uDesignation" name="uDesignation" [(ngModel)]="designation"
+          placeholder="e.g. Lead Designer" />
+      </div>
+
+      <div class="form-group">
+        <label for="uShift">Shift Timing *</label>
+        <select id="uShift" name="uShift" [(ngModel)]="shiftTiming" required>
+          <option value="9:00 AM - 6:00 PM">9:00 AM - 6:00 PM</option>
+          <option value="10:00 AM - 7:00 PM">10:00 AM - 7:00 PM</option>
+        </select>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -165,9 +181,19 @@
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="eDesignation">Designation</label>
-      <input type="text" id="eDesignation" name="eDesignation" [(ngModel)]="editDesignation" />
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="eDesignation">Designation</label>
+        <input type="text" id="eDesignation" name="eDesignation" [(ngModel)]="editDesignation" />
+      </div>
+
+      <div class="form-group">
+        <label for="eShift">Shift Timing</label>
+        <select id="eShift" name="eShift" [(ngModel)]="editShiftTiming">
+          <option value="9:00 AM - 6:00 PM">9:00 AM - 6:00 PM</option>
+          <option value="10:00 AM - 7:00 PM">10:00 AM - 7:00 PM</option>
+        </select>
+      </div>
     </div>
 
     <div class="form-grid">

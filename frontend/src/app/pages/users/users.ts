@@ -66,6 +66,7 @@ export class UsersComponent implements OnInit {
   roleId = '';
   designation = '';
   department = '';
+  shiftTiming = '10:00 AM - 7:00 PM';
 
   // Edit form
   selectedUserId = '';
@@ -74,6 +75,7 @@ export class UsersComponent implements OnInit {
   editDesignation = '';
   editDepartment = '';
   editRoleId = '';
+  editShiftTiming = '10:00 AM - 7:00 PM';
 
   // Status form
   statusUserId = '';
@@ -148,7 +150,8 @@ export class UsersComponent implements OnInit {
       phone: this.phone || undefined,
       designation: this.designation || undefined,
       department: this.department || undefined,
-      departmentId: this.departmentId || undefined
+      departmentId: this.departmentId || undefined,
+      shiftTiming: this.shiftTiming
     };
 
     this.userService.create(dto).subscribe({
@@ -173,6 +176,7 @@ export class UsersComponent implements OnInit {
     this.editDesignation = user.designation || '';
     this.editDepartment = user.department || '';
     this.editRoleId = user.roleId || '';
+    this.editShiftTiming = user.shiftTiming || '10:00 AM - 7:00 PM';
     this.showEditModal = true;
   }
 
@@ -183,7 +187,8 @@ export class UsersComponent implements OnInit {
       lastName: this.editLastName || undefined,
       designation: this.editDesignation || undefined,
       department: this.editDepartment || undefined,
-      roleId: this.editRoleId
+      roleId: this.editRoleId,
+      shiftTiming: this.editShiftTiming
     };
 
     this.userService.update(this.selectedUserId, dto).subscribe({
@@ -276,5 +281,6 @@ export class UsersComponent implements OnInit {
     this.roleId = '';
     this.designation = '';
     this.department = '';
+    this.shiftTiming = '10:00 AM - 7:00 PM';
   }
 }

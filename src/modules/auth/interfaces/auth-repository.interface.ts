@@ -1,7 +1,11 @@
 import { Company, Role, User } from "@prisma/client";
 
 export const AUTH_REPOSITORY = Symbol("AUTH_REPOSITORY");
-export type AuthUser = User & { company: Company; role: Role & { permissions?: { permission: { key: string } }[] } };
+export type AuthUser = User & {
+  shiftTiming?: string | null;
+  company: Company;
+  role: Role & { permissions?: { permission: { key: string } }[] };
+};
 
 export interface CreateAdminInput {
   firstName: string;

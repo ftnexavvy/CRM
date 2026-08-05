@@ -13,6 +13,7 @@ export class CreateUserDto {
   @ApiPropertyOptional() @IsOptional() @IsString() department?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() departmentId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUrl() profileImage?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() shiftTiming?: string;
 }
 export class UpdateUserDto extends PartialType(CreateUserDto) {}
 export class UpdateUserStatusDto { @ApiProperty({ enum: UserStatus }) @IsEnum(UserStatus) status!: UserStatus; }

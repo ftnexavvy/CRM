@@ -52,13 +52,18 @@ export class AuthService {
     }
     this.assertActive(user);
 
-    // Shift Timings Check: 10:00 AM to 7:00 PM (10:00 to 19:00). Admins exempt.
+    // Dynamic Shift Timings Check (9:00 AM - 6:00 PM or 10:00 AM - 7:00 PM). Admins exempt.
     const roleName = (typeof user.role === 'string' ? user.role : user.role?.name || '').toUpperCase();
     const isAdmin = ['ADMINISTRATOR', 'ADMIN'].includes(roleName);
     if (!isAdmin) {
-      const currentHour = new Date().getHours();
-      if (currentHour < 10) {
-        throw new UnauthorizedException("Employee login is allowed only during shift hours (10:00 AM - 7:00 PM)");
+      const shiftTiming = (user as any).shiftTiming || "10:00 AM - 7:00 PM";
+      const isNineToSix = shiftTiming.includes("9:00 AM") || shiftTiming.includes("9");
+      const startHour = isNineToSix ? 9 : 10;
+      const shiftLabel = isNineToSix ? "9:00 AM - 6:00 PM" : "10:00 AM - 7:00 PM";
+
+      const currentHour = this.getCurrentHourIST();
+      if (currentHour < startHour) {
+        throw new UnauthorizedException(`Employee login is allowed only during shift hours (${shiftLabel})`);
       }
     }
 
@@ -82,9 +87,14 @@ export class AuthService {
       const roleName = (typeof user.role === 'string' ? user.role : user.role?.name || '').toUpperCase();
       const isAdmin = ['ADMINISTRATOR', 'ADMIN'].includes(roleName);
       if (!isAdmin) {
-        const currentHour = new Date().getHours();
-        if (currentHour < 19) {
-          throw new BadRequestException("Early logout is not allowed before 7:00 PM (Shift ends at 7:00 PM)");
+        const shiftTiming = (user as any).shiftTiming || "10:00 AM - 7:00 PM";
+        const isNineToSix = shiftTiming.includes("9:00 AM") || shiftTiming.includes("9");
+        const endHour = isNineToSix ? 18 : 19;
+        const endTimeLabel = isNineToSix ? "6:00 PM" : "7:00 PM";
+
+        const currentHour = this.getCurrentHourIST();
+        if (currentHour < endHour) {
+          throw new BadRequestException(`Early logout is not allowed before ${endTimeLabel} (Shift ends at ${endTimeLabel})`);
         }
       }
 
@@ -156,6 +166,13 @@ export class AuthService {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private getCurrentHourIST(): number {
+    const options: Intl.DateTimeFormatOptions = { timeZone: "Asia/Kolkata", hour: "numeric", hour12: false };
+    const formatter = new Intl.DateTimeFormat("en-US", options);
+    const hourStr = formatter.format(new Date());
+    return parseInt(hourStr, 10) % 24;
   }
 
   private isUniqueConstraintError(error: unknown): boolean {
