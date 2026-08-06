@@ -43,6 +43,7 @@ const app_module_1 = require("./app.module");
 const express = __importStar(require("express"));
 const path = __importStar(require("path"));
 const helmet_1 = __importDefault(require("helmet"));
+const all_exceptions_filter_1 = require("./common/filters/all-exceptions.filter");
 const compression = require("compression");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
@@ -62,6 +63,8 @@ async function bootstrap() {
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
         allowedHeaders: "Content-Type,Accept,Authorization,X-Requested-With",
     });
+    // Global Exceptions Filter to catch & log detailed errors
+    app.useGlobalFilters(new all_exceptions_filter_1.AllExceptionsFilter());
     // Global Validation
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,

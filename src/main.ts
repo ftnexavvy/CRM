@@ -5,6 +5,7 @@ import { AppModule } from "./app.module";
 import * as express from "express";
 import * as path from "path";
 import helmet from "helmet";
+import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 const compression = require("compression");
 
 async function bootstrap() {
@@ -31,6 +32,9 @@ async function bootstrap() {
   });
 
 
+
+  // Global Exceptions Filter to catch & log detailed errors
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Global Validation
   app.useGlobalPipes(
