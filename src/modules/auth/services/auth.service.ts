@@ -22,7 +22,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => ActivityService)) private readonly activityService: ActivityService,
-  ) {}
+  ) { }
 
   async register(dto: RegisterDto): Promise<AuthDataEntity> {
     const existingUser = await this.authRepository.findByEmail(this.normalizeEmail(dto.email));
@@ -201,11 +201,11 @@ export class AuthService {
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
+            Authorization: `Bearer ${resendApiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "FT Nexavvy CRM <onboarding@resend.dev>",
+            from: "FT Nexavvy CRM <noreply@ftnexavvy.com>",
             to: [toEmail],
             subject: `🔑 ${otp} is your 2FA Login OTP Code`,
             html: htmlContent,
