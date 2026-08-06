@@ -48,12 +48,6 @@
         <span>📧 OTP sent to Email:</span>
         <strong>{{ maskedEmail }}</strong>
       </div>
-      @if (devOtp) {
-        <div class="mt-2 pt-2 border-top text-primary d-flex align-items-center justify-content-between" style="font-size: 0.82rem; font-weight: 700;">
-          <span>🔑 Quick Test OTP Code:</span>
-          <span style="letter-spacing: 3px; background: rgba(99, 102, 241, 0.15); color: #818cf8; padding: 3px 10px; border-radius: 6px; font-family: monospace; font-size: 1.05rem;">{{ devOtp }}</span>
-        </div>
-      }
     </div>
 
     <form (ngSubmit)="onVerifyOtp()">

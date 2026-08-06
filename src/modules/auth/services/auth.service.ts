@@ -112,7 +112,6 @@ export class AuthService {
       requireOtp: true,
       tempToken,
       maskedEmail,
-      devOtp: otp,
       message: `6-Digit OTP sent to your Email (${maskedEmail})`
     };
   }
@@ -154,7 +153,7 @@ export class AuthService {
     return this.createSession(user);
   }
 
-  async resendOtp(dto: ResendOtpDto): Promise<{ message: string; devOtp?: string }> {
+  async resendOtp(dto: ResendOtpDto): Promise<{ message: string }> {
     const entry = this.otpStore.get(dto.tempToken);
     if (!entry) {
       throw new UnauthorizedException("Session expired. Please log in again.");
@@ -174,8 +173,7 @@ export class AuthService {
     }
 
     return {
-      message: "New 6-digit OTP has been sent to your email",
-      devOtp: newOtp
+      message: "New 6-digit OTP has been sent to your email"
     };
   }
 
