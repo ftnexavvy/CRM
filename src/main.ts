@@ -4,9 +4,15 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import * as express from "express";
 import * as path from "path";
+import helmet from "helmet";
+const compression = require("compression");
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Enable Gzip HTTP response compression for maximum live speed
+  app.use(compression());
+  app.use(helmet({ contentSecurityPolicy: false }));
 
   // Serve static uploaded files
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

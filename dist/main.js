@@ -32,6 +32,9 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
@@ -39,8 +42,13 @@ const swagger_1 = require("@nestjs/swagger");
 const app_module_1 = require("./app.module");
 const express = __importStar(require("express"));
 const path = __importStar(require("path"));
+const helmet_1 = __importDefault(require("helmet"));
+const compression = require("compression");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    // Enable Gzip HTTP response compression for maximum live speed
+    app.use(compression());
+    app.use((0, helmet_1.default)({ contentSecurityPolicy: false }));
     // Serve static uploaded files
     app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
     // Global Prefix

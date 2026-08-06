@@ -147,6 +147,8 @@ model Workflow {
 
   @@unique([companyId, subjectType, subjectId])
   @@index([companyId, status, currentDepartmentId])
+  @@index([companyId, currentDepartmentId])
+  @@index([companyId, updatedAt])
   @@map("workflows")
 }
 
@@ -225,6 +227,8 @@ model Task {
   @@index([workflowId, serviceId])
   @@index([companyId, departmentId, status])
   @@index([workflowId, status])
+  @@index([workflowId, departmentId])
+  @@index([companyId, updatedAt])
   @@map("tasks")
 }
 
