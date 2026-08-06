@@ -51,15 +51,17 @@ export class AuthService {
 
   private getTransporter(): nodemailer.Transporter {
     if (!this.mailTransporter) {
-      const user = this.configService.get<string>("SMTP_USER") || "ftnexavvyprivatelimited@gmail.com";
+      const user = (this.configService.get<string>("SMTP_USER") || "ftnexavvyprivatelimited@gmail.com").trim();
       const pass = (this.configService.get<string>("SMTP_PASS") || "slievrcotirmsasp").replace(/\s+/g, "");
 
       this.mailTransporter = nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true, // Port 465 SSL is open on Render cloud firewall (unlike port 587)
         auth: { user, pass },
-        pool: true,
-        maxConnections: 5,
-        maxMessages: 100,
+        tls: {
+          rejectUnauthorized: false,
+        },
       });
     }
     return this.mailTransporter;
@@ -175,32 +177,42 @@ export class AuthService {
   }
 
   private async sendOtpEmail(toEmail: string, otp: string, firstName: string): Promise<boolean> {
-    try {
-      const user = this.configService.get<string>("SMTP_USER") || "ftnexavvyprivatelimited@gmail.com";
-      const transporter = this.getTransporter();
-
-      await transporter.sendMail({
-        from: `"FT Nexavvy CRM" <${user}>`,
-        to: toEmail,
-        subject: `🔑 ${otp} is your 2FA Login OTP Code`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">
-            <h2 style="color: #4f46e5; margin-bottom: 8px; text-align: center;">FT Nexavvy CRM</h2>
-            <p style="color: #374151; font-size: 15px;">Hello <strong>${firstName}</strong>,</p>
-            <p style="color: #374151; font-size: 14px;">Your 6-digit OTP code for logging into the CRM system is:</p>
-            <div style="background: #f3f4f6; padding: 18px; text-align: center; border-radius: 8px; margin: 20px 0;">
-              <span style="font-size: 34px; font-weight: bold; letter-spacing: 10px; color: #111827;">${otp}</span>
-            </div>
-            <p style="color: #6b7280; font-size: 13px; text-align: center;">This OTP is valid for 5 minutes. Do not share this code with anyone.</p>
+    const user = (this.configService.get<string>("SMTP_USER") || "ftnexavvyprivatelimited@gmail.com").trim();
+    const mailOptions = {
+      from: `"FT Nexavvy CRM" <${user}>`,
+      to: toEmail,
+      subject: `🔑 ${otp} is your 2FA Login OTP Code`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">
+          <h2 style="color: #4f46e5; margin-bottom: 8px; text-align: center;">FT Nexavvy CRM</h2>
+          <p style="color: #374151; font-size: 15px;">Hello <strong>${firstName}</strong>,</p>
+          <p style="color: #374151; font-size: 14px;">Your 6-digit OTP code for logging into the CRM system is:</p>
+          <div style="background: #f3f4f6; padding: 18px; text-align: center; border-radius: 8px; margin: 20px 0;">
+            <span style="font-size: 34px; font-weight: bold; letter-spacing: 10px; color: #111827;">${otp}</span>
           </div>
-        `
-      });
+          <p style="color: #6b7280; font-size: 13px; text-align: center;">This OTP is valid for 5 minutes. Do not share this code with anyone.</p>
+        </div>
+      `
+    };
 
-      this.logger.log(`📧 OTP email successfully sent to '${toEmail}' via Gmail SMTP`);
+    try {
+      const transporter = this.getTransporter();
+      await transporter.sendMail(mailOptions);
+      this.logger.log(`📧 OTP email successfully sent to '${toEmail}' via Gmail SSL SMTP (Port 465)`);
       return true;
     } catch (error) {
-      this.logger.error(`Failed to send OTP email to '${toEmail}': ${error}`);
-      return false;
+      this.logger.warn(`Primary transporter failed for '${toEmail}', retrying with fresh connection: ${error}`);
+      try {
+        // Reset transporter and retry with fresh SSL connection
+        this.mailTransporter = null;
+        const freshTransporter = this.getTransporter();
+        await freshTransporter.sendMail(mailOptions);
+        this.logger.log(`📧 OTP email successfully delivered to '${toEmail}' on retry!`);
+        return true;
+      } catch (retryErr) {
+        this.logger.error(`Failed to send OTP email to '${toEmail}' on retry: ${retryErr}`);
+        return false;
+      }
     }
   }
 
