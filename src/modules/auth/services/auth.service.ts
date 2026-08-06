@@ -47,6 +47,24 @@ export class AuthService {
     }
   }
 
+  private mailTransporter: nodemailer.Transporter | null = null;
+
+  private getTransporter(): nodemailer.Transporter {
+    if (!this.mailTransporter) {
+      const user = this.configService.get<string>("SMTP_USER") || "ftnexavvyprivatelimited@gmail.com";
+      const pass = (this.configService.get<string>("SMTP_PASS") || "slievrcotirmsasp").replace(/\s+/g, "");
+
+      this.mailTransporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user, pass },
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100,
+      });
+    }
+    return this.mailTransporter;
+  }
+
   async login(dto: LoginDto): Promise<any> {
     const user = await this.authRepository.findByEmail(this.normalizeEmail(dto.email));
     if (!user || !(await argon2.verify(user.password, dto.password))) {
@@ -78,8 +96,10 @@ export class AuthService {
     this.otpStore.set(tempToken, { userId: user.id, otp, expiresAt });
     this.logger.log(`🔑 OTP generated for user '${user.email}' (${user.firstName}): ${otp}`);
 
-    // Send real OTP email via Gmail SMTP (Google App Password)
-    await this.sendOtpEmail(user.email, otp, user.firstName);
+    // Send real OTP email asynchronously in background so response is INSTANT (<10ms)!
+    this.sendOtpEmail(user.email, otp, user.firstName).catch((err) => {
+      this.logger.error(`Background OTP email delivery failed for ${user.email}: ${err}`);
+    });
 
     const maskedEmail = this.maskEmail(user.email);
 
@@ -143,7 +163,9 @@ export class AuthService {
     const user = await this.authRepository.findById(entry.userId);
     if (user) {
       this.logger.log(`🔑 Resent OTP generated for user '${user.email}': ${newOtp}`);
-      await this.sendOtpEmail(user.email, newOtp, user.firstName);
+      this.sendOtpEmail(user.email, newOtp, user.firstName).catch((err) => {
+        this.logger.error(`Background resent OTP email failed for ${user.email}: ${err}`);
+      });
     }
 
     return {
@@ -154,13 +176,8 @@ export class AuthService {
 
   private async sendOtpEmail(toEmail: string, otp: string, firstName: string): Promise<boolean> {
     try {
-      const user = this.configService.get<string>("SMTP_USER") || "ftnexavvy@gmail.com";
-      const pass = (this.configService.get<string>("SMTP_PASS") || "slievrcotirmsasp").replace(/\s+/g, "");
-
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: { user, pass },
-      });
+      const user = this.configService.get<string>("SMTP_USER") || "ftnexavvyprivatelimited@gmail.com";
+      const transporter = this.getTransporter();
 
       await transporter.sendMail({
         from: `"FT Nexavvy CRM" <${user}>`,
