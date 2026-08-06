@@ -181,64 +181,31 @@ export class AuthService {
 
   private async sendOtpEmail(toEmail: string, otp: string, firstName: string): Promise<boolean> {
     const senderEmail = (this.configService.get<string>("SMTP_USER") || "ftnexavvyprivatelimited@gmail.com").trim();
-    const resendApiKey = (this.configService.get<string>("RESEND_API_KEY") || process.env.RESEND_API_KEY || "").trim();
 
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">
-        <h2 style="color: #4f46e5; margin-bottom: 8px; text-align: center;">FT Nexavvy CRM</h2>
-        <p style="color: #374151; font-size: 15px;">Hello <strong>${firstName}</strong>,</p>
-        <p style="color: #374151; font-size: 14px;">Your 6-digit OTP code for logging into the CRM system is:</p>
-        <div style="background: #f3f4f6; padding: 18px; text-align: center; border-radius: 8px; margin: 20px 0;">
-          <span style="font-size: 34px; font-weight: bold; letter-spacing: 10px; color: #111827;">${otp}</span>
-        </div>
-        <p style="color: #6b7280; font-size: 13px; text-align: center;">This OTP is valid for 5 minutes. Do not share this code with anyone.</p>
-      </div>
-    `;
-
-    // 1. Primary: Resend HTTPS API (Port 443 - Instant & guaranteed delivery on live Render cloud)
-    if (resendApiKey) {
-      try {
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "FT Nexavvy CRM <onboarding@resend.dev>",
-            to: [toEmail],
-            subject: `🔑 ${otp} is your 2FA Login OTP Code`,
-            html: htmlContent,
-          }),
-        });
-
-        const resData = await res.json();
-        if (res.ok) {
-          this.logger.log(`📧 OTP email successfully delivered to '${toEmail}' via Resend HTTPS API! ID: ${resData?.id}`);
-          return true;
-        } else {
-          this.logger.warn(`Resend API returned non-200 status: ${JSON.stringify(resData)}`);
-        }
-      } catch (resendErr) {
-        this.logger.error(`Resend API delivery error: ${resendErr}`);
-      }
-    }
-
-    // 2. Fallback: Nodemailer SMTP
     const mailOptions = {
       from: `"FT Nexavvy CRM" <${senderEmail}>`,
       to: toEmail,
       subject: `🔑 ${otp} is your 2FA Login OTP Code`,
-      html: htmlContent,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">
+          <h2 style="color: #4f46e5; margin-bottom: 8px; text-align: center;">FT Nexavvy CRM</h2>
+          <p style="color: #374151; font-size: 15px;">Hello <strong>${firstName}</strong>,</p>
+          <p style="color: #374151; font-size: 14px;">Your 6-digit OTP code for logging into the CRM system is:</p>
+          <div style="background: #f3f4f6; padding: 18px; text-align: center; border-radius: 8px; margin: 20px 0;">
+            <span style="font-size: 34px; font-weight: bold; letter-spacing: 10px; color: #111827;">${otp}</span>
+          </div>
+          <p style="color: #6b7280; font-size: 13px; text-align: center;">This OTP is valid for 5 minutes. Do not share this code with anyone.</p>
+        </div>
+      `
     };
 
     try {
       const transporter = this.getTransporter();
       await transporter.sendMail(mailOptions);
-      this.logger.log(`📧 OTP email sent to '${toEmail}' via Nodemailer SMTP fallback`);
+      this.logger.log(`📧 OTP email successfully sent to '${toEmail}' via Gmail SMTP`);
       return true;
     } catch (error) {
-      this.logger.error(`Failed to send OTP email via SMTP fallback to '${toEmail}': ${error}`);
+      this.logger.error(`Failed to send OTP email to '${toEmail}' via Gmail SMTP: ${error}`);
       return false;
     }
   }
