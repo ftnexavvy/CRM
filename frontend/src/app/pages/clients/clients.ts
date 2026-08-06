@@ -134,6 +134,22 @@ export class ClientsComponent implements OnInit {
 
   // SMM Configuration fields
   smmPlatforms = { facebook: false, instagram: false, linkedin: false, twitter: false, youtube: false, pinterest: false, threads: false };
+  
+  selectAllPlatforms(select: boolean = true): void {
+    for (const key of Object.keys(this.smmPlatforms) as (keyof typeof this.smmPlatforms)[]) {
+      this.smmPlatforms[key] = select;
+    }
+  }
+
+  areAllPlatformsSelected(): boolean {
+    return Object.values(this.smmPlatforms).every(val => val === true);
+  }
+
+  toggleSelectAllPlatforms(): void {
+    const allSelected = this.areAllPlatformsSelected();
+    this.selectAllPlatforms(!allSelected);
+  }
+
   smmStaticPosts = 0;
   smmCarouselPosts = 0;
   smmReels = 0;

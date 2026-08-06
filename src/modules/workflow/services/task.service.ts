@@ -132,13 +132,18 @@ export class TaskService {
     if (task.isLocked && status === "COMPLETED") {
       throw new Error("Cannot complete a locked task until prerequisite tasks are finished.");
     }
+
+    const now = new Date();
+    const shouldSetStartedAt = !(task as any).startedAt;
+
     const updated = await this.prisma.task.update({
       where: { id: taskId },
       data: {
         status,
-        completedAt: status === "COMPLETED" ? new Date() : undefined,
+        ...(shouldSetStartedAt ? { startedAt: status === "COMPLETED" ? (task.updatedAt || now) : now } : {}),
+        completedAt: status === "COMPLETED" ? now : undefined,
         publishedPlatforms: dto.publishedPlatforms || undefined
-      }
+      } as any
     });
 
     if (status === "COMPLETED") {
@@ -192,6 +197,14 @@ export class TaskService {
         actorId,
         "task_completed",
         `Completed task '${task.title}'`
+      );
+
+      await this.notificationService.notifyCompany(
+        companyId,
+        "✅ Task Completed",
+        `Task '${task.title}' has been completed!`,
+        "task_completed",
+        updated
       );
     }
 

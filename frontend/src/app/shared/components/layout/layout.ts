@@ -56,13 +56,38 @@ export class LayoutComponent implements OnInit, OnDestroy {
     // Subscribe to real-time events
     this.socketService.onEvent<any>('new_notification').subscribe(notification => {
       this.notifications.update(n => [notification, ...n]);
-      playNotificationSound();
+      playNotificationSound('ok');
+      if (notification.title && notification.message) {
+        this.toastService.info(`${notification.title}: ${notification.message}`);
+      }
+    });
+
+    this.socketService.onEvent<any>('lead_created').subscribe(eventData => {
+      playNotificationSound('ok');
+      if (eventData.message) {
+        this.toastService.success(eventData.message);
+      }
+    });
+
+    this.socketService.onEvent<any>('employee_created').subscribe(eventData => {
+      playNotificationSound('ok');
+      if (eventData.message) {
+        this.toastService.success(eventData.message);
+      }
+    });
+
+    this.socketService.onEvent<any>('task_completed').subscribe(eventData => {
+      playNotificationSound('ok');
+      if (eventData.message) {
+        this.toastService.success(eventData.message);
+      }
     });
 
     this.socketService.onEvent<any>('new_message').subscribe(message => {
       this.chatMessages.update(m => [...m, message]);
+      playNotificationSound('ok');
       if (message.senderId !== this.currentUser()?.id) {
-        playNotificationSound();
+        this.toastService.info('New message received');
       }
       if (this.chatExpanded()) {
         setTimeout(() => this.scrollChatToBottom(), 50);
@@ -177,6 +202,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
     this.chatService.sendMessage(text).subscribe({
       next: () => {
+        playNotificationSound('ok');
         this.chatService.getMessages().subscribe(res => {
           if (res.success && Array.isArray(res.data)) {
             this.chatMessages.set(res.data);

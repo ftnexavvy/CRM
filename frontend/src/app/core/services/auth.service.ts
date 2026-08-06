@@ -47,7 +47,11 @@ export class AuthService {
   }
 
   login(credentials: { email: string; password: string }): Observable<any> {
-    return this.http.post<any>('/api/v1/auth/login', credentials).pipe(
+    return this.http.post<any>('/api/v1/auth/login', credentials);
+  }
+
+  verifyOtp(tempToken: string, otp: string): Observable<any> {
+    return this.http.post<any>('/api/v1/auth/verify-otp', { tempToken, otp }).pipe(
       tap(res => {
         if (res.success && res.data) {
           this.setSession(res.data.accessToken, res.data.refreshToken);
@@ -55,6 +59,10 @@ export class AuthService {
       }),
       switchMap(() => this.loadProfile())
     );
+  }
+
+  resendOtp(tempToken: string): Observable<any> {
+    return this.http.post<any>('/api/v1/auth/resend-otp', { tempToken });
   }
 
   register(userData: any): Observable<any> {

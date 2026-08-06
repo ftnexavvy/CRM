@@ -7,6 +7,7 @@ import { DepartmentService } from '../../core/services/department.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ModalComponent } from '../../shared/components/modal/modal';
+import { playNotificationSound } from '../../core/utils/audio.util';
 
 @Component({
   selector: 'app-users',
@@ -72,6 +73,8 @@ export class UsersComponent implements OnInit {
   selectedUserId = '';
   editFirstName = '';
   editLastName = '';
+  editEmail = '';
+  editPhone = '';
   editDesignation = '';
   editDepartment = '';
   editRoleId = '';
@@ -156,6 +159,7 @@ export class UsersComponent implements OnInit {
 
     this.userService.create(dto).subscribe({
       next: () => {
+        playNotificationSound('ok');
         this.toast.success('Employee created successfully!');
         this.showCreateModal = false;
         this.resetCreateForm();
@@ -173,6 +177,8 @@ export class UsersComponent implements OnInit {
     this.selectedUserId = user.id;
     this.editFirstName = user.firstName;
     this.editLastName = user.lastName || '';
+    this.editEmail = user.email || '';
+    this.editPhone = user.phone || '';
     this.editDesignation = user.designation || '';
     this.editDepartment = user.department || '';
     this.editRoleId = user.roleId || '';
@@ -181,10 +187,17 @@ export class UsersComponent implements OnInit {
   }
 
   onEditSubmit(): void {
+    if (!this.editFirstName || !this.editEmail) {
+      this.toast.warning('First name and email are required');
+      return;
+    }
+
     this.submitting.set(true);
     const dto = {
       firstName: this.editFirstName,
       lastName: this.editLastName || undefined,
+      email: this.editEmail,
+      phone: this.editPhone || undefined,
       designation: this.editDesignation || undefined,
       department: this.editDepartment || undefined,
       roleId: this.editRoleId,

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { CurrentUser } from "../decorators/current-user.decorator";
-import { ChangePasswordDto, LoginDto, RefreshTokenDto, RegisterDto } from "../dto";
+import { ChangePasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResendOtpDto, VerifyOtpDto } from "../dto";
 import { AuthResponseEntity, CurrentUserResponseEntity } from "../entities/auth-response.entity";
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
 import { AuthUser } from "../interfaces/auth-repository.interface";
@@ -22,11 +22,28 @@ export class AuthController {
 
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Authenticate and create a token session" })
+  @ApiOperation({ summary: "Authenticate credentials and generate OTP" })
   @ApiOkResponse({ type: AuthResponseEntity })
   @ApiUnauthorizedResponse({ description: "Invalid credentials or disabled account" })
   async login(@Body() dto: LoginDto) {
-    return this.response(true, "Login successful", await this.authService.login(dto));
+    return this.response(true, "OTP sent to email and phone number", await this.authService.login(dto));
+  }
+
+  @Post("verify-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify 6-digit OTP and issue JWT session" })
+  @ApiOkResponse({ type: AuthResponseEntity })
+  @ApiUnauthorizedResponse({ description: "Invalid or expired OTP" })
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.response(true, "OTP verified successfully", await this.authService.verifyOtp(dto));
+  }
+
+  @Post("resend-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Resend 6-digit OTP for login session" })
+  @ApiOkResponse()
+  async resendOtp(@Body() dto: ResendOtpDto) {
+    return this.response(true, "OTP resent successfully", await this.authService.resendOtp(dto));
   }
 
   @Post("refresh")

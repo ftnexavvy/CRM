@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FormatEnumPipe } from '../../shared/pipes/format-enum.pipe';
 import { ModalComponent } from '../../shared/components/modal/modal';
+import { playNotificationSound } from '../../core/utils/audio.util';
 
 @Component({
   selector: 'app-leads',
@@ -182,6 +183,7 @@ export class LeadsComponent implements OnInit {
 
     this.leadService.create(dto).subscribe({
       next: (res) => {
+        playNotificationSound('ok');
         this.toast.success('Lead created successfully!');
         this.showCreateModal = false;
         this.resetCreateForm();

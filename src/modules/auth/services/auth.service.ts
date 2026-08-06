@@ -2,17 +2,20 @@ import { BadRequestException, ConflictException, Inject, Injectable, Logger, Una
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as argon2 from "argon2";
+import * as nodemailer from "nodemailer";
 import { UserStatus } from "@prisma/client";
-import { ChangePasswordDto, LoginDto, RegisterDto } from "../dto";
+import { ChangePasswordDto, LoginDto, RegisterDto, ResendOtpDto, VerifyOtpDto } from "../dto";
 import { AuthDataEntity, AuthUserEntity } from "../entities/auth-response.entity";
 import { AUTH_REPOSITORY, AuthUser, IAuthRepository } from "../interfaces/auth-repository.interface";
 import { JwtPayload } from "../interfaces/jwt-payload.interface";
+import { randomUUID } from "crypto";
 
 import { ActivityService } from "../../activity/services/activity.service";
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly otpStore = new Map<string, { userId: string; otp: string; expiresAt: number }>();
 
   constructor(
     @Inject(AUTH_REPOSITORY) private readonly authRepository: IAuthRepository,
@@ -44,7 +47,7 @@ export class AuthService {
     }
   }
 
-  async login(dto: LoginDto): Promise<AuthDataEntity> {
+  async login(dto: LoginDto): Promise<any> {
     const user = await this.authRepository.findByEmail(this.normalizeEmail(dto.email));
     if (!user || !(await argon2.verify(user.password, dto.password))) {
       this.logger.warn(`Failed login attempt for '${this.normalizeEmail(dto.email)}'`);
@@ -67,18 +70,121 @@ export class AuthService {
       }
     }
 
-    await this.authRepository.updateLastLogin(user.id);
-    this.logger.log(`User '${user.id}' logged in`);
+    // Generate 6-Digit OTP & Temporary Session Token
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const tempToken = randomUUID();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes expiration
 
-    // Log Activity with Employee Name
+    this.otpStore.set(tempToken, { userId: user.id, otp, expiresAt });
+    this.logger.log(`🔑 OTP generated for user '${user.email}' (${user.firstName}): ${otp}`);
+
+    // Send real OTP email via Gmail SMTP (Google App Password)
+    await this.sendOtpEmail(user.email, otp, user.firstName);
+
+    const maskedEmail = this.maskEmail(user.email);
+
+    return {
+      requireOtp: true,
+      tempToken,
+      maskedEmail,
+      devOtp: otp,
+      message: `6-Digit OTP sent to your Email (${maskedEmail})`
+    };
+  }
+
+  async verifyOtp(dto: VerifyOtpDto): Promise<AuthDataEntity> {
+    const entry = this.otpStore.get(dto.tempToken);
+    if (!entry) {
+      throw new UnauthorizedException("Session expired or invalid OTP request. Please log in again.");
+    }
+
+    if (Date.now() > entry.expiresAt) {
+      this.otpStore.delete(dto.tempToken);
+      throw new UnauthorizedException("OTP has expired. Please request a new OTP.");
+    }
+
+    if (entry.otp !== dto.otp.trim()) {
+      throw new UnauthorizedException("Invalid 6-digit OTP code. Please check and try again.");
+    }
+
+    // OTP verified successfully! Clear OTP entry
+    this.otpStore.delete(dto.tempToken);
+
+    const user = await this.authRepository.findById(entry.userId);
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+    this.assertActive(user);
+
+    await this.authRepository.updateLastLogin(user.id);
+    this.logger.log(`User '${user.id}' verified OTP and logged in successfully`);
+
     await this.activityService.log(
       user.companyId,
       user.id,
       "user_login",
-      `Employee ${user.firstName} ${user.lastName || ''} logged into the system`
+      `Employee ${user.firstName} ${user.lastName || ''} completed 2FA OTP login into the system`
     );
 
     return this.createSession(user);
+  }
+
+  async resendOtp(dto: ResendOtpDto): Promise<{ message: string; devOtp?: string }> {
+    const entry = this.otpStore.get(dto.tempToken);
+    if (!entry) {
+      throw new UnauthorizedException("Session expired. Please log in again.");
+    }
+
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    entry.otp = newOtp;
+    entry.expiresAt = Date.now() + 5 * 60 * 1000;
+    this.otpStore.set(dto.tempToken, entry);
+
+    const user = await this.authRepository.findById(entry.userId);
+    if (user) {
+      this.logger.log(`🔑 Resent OTP generated for user '${user.email}': ${newOtp}`);
+      await this.sendOtpEmail(user.email, newOtp, user.firstName);
+    }
+
+    return {
+      message: "New 6-digit OTP has been sent to your email",
+      devOtp: newOtp
+    };
+  }
+
+  private async sendOtpEmail(toEmail: string, otp: string, firstName: string): Promise<boolean> {
+    try {
+      const user = this.configService.get<string>("SMTP_USER") || "ftnexavvy@gmail.com";
+      const pass = (this.configService.get<string>("SMTP_PASS") || "slievrcotirmsasp").replace(/\s+/g, "");
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user, pass },
+      });
+
+      await transporter.sendMail({
+        from: `"FT Nexavvy CRM" <${user}>`,
+        to: toEmail,
+        subject: `🔑 ${otp} is your 2FA Login OTP Code`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">
+            <h2 style="color: #4f46e5; margin-bottom: 8px; text-align: center;">FT Nexavvy CRM</h2>
+            <p style="color: #374151; font-size: 15px;">Hello <strong>${firstName}</strong>,</p>
+            <p style="color: #374151; font-size: 14px;">Your 6-digit OTP code for logging into the CRM system is:</p>
+            <div style="background: #f3f4f6; padding: 18px; text-align: center; border-radius: 8px; margin: 20px 0;">
+              <span style="font-size: 34px; font-weight: bold; letter-spacing: 10px; color: #111827;">${otp}</span>
+            </div>
+            <p style="color: #6b7280; font-size: 13px; text-align: center;">This OTP is valid for 5 minutes. Do not share this code with anyone.</p>
+          </div>
+        `
+      });
+
+      this.logger.log(`📧 OTP email successfully sent to '${toEmail}' via Gmail SMTP`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send OTP email to '${toEmail}': ${error}`);
+      return false;
+    }
   }
 
   async logout(companyId: string, userId: string): Promise<void> {
@@ -194,6 +300,23 @@ export class AuthService {
         status: user.company.status,
       },
     };
+  }
+
+  private maskEmail(email: string): string {
+    const parts = email.split('@');
+    if (parts.length < 2) return email;
+    const [name, domain] = parts;
+    const masked = name.length > 2 ? `${name.substring(0, 2)}***` : `${name[0]}*`;
+    return `${masked}@${domain}`;
+  }
+
+  private maskPhone(phone: string): string {
+    if (!phone) return 'Not Provided';
+    const trimmed = phone.trim();
+    if (trimmed.length <= 4) return trimmed;
+    const first2 = trimmed.substring(0, 2);
+    const last2 = trimmed.substring(trimmed.length - 2);
+    return `${first2}******${last2}`;
   }
 
   async verifyAccessToken(token: string): Promise<AuthUserEntity | null> {

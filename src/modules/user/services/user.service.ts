@@ -4,6 +4,7 @@ import { CreateUserDto, UpdateUserDto, UpdateUserStatusDto } from "../dto/user.d
 import { UserRepository } from "../repositories/user.repository";
 import { RoleRepository } from "../../role/repositories/role.repository";
 
+import { NotificationService } from "../../notifications/services/notification.service";
 import { PrismaService } from "../../../core/prisma/prisma.service";
 
 @Injectable()
@@ -12,6 +13,7 @@ export class UserService {
     private readonly users: UserRepository,
     private readonly roles: RoleRepository,
     private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async getLoginHistory(companyId: string, userId: string) {
@@ -26,11 +28,22 @@ export class UserService {
       take: 100,
     });
   }
+
   async create(companyId: string, dto: CreateUserDto) {
     await this.assertUnique(dto.email, dto.phone);
     await this.assertRole(companyId, dto.roleId);
     const { password, ...data } = dto;
-    return this.sanitize(await this.users.create({ ...data, email: dto.email.toLowerCase(), password: await argon2.hash(password), companyId }));
+    const createdUser = await this.users.create({ ...data, email: dto.email.toLowerCase(), password: await argon2.hash(password), companyId });
+    const sanitized = this.sanitize(createdUser);
+    const fullName = `${sanitized.firstName || ''} ${sanitized.lastName || ''}`.trim();
+    await this.notificationService.notifyCompany(
+      companyId,
+      "👤 New Employee Added",
+      `New employee '${fullName}' has been added to the team!`,
+      "employee_created",
+      sanitized
+    );
+    return sanitized;
   }
   async findAll(companyId: string) { return (await this.users.findMany(companyId)).map((user) => this.sanitize(user)); }
   async findOne(companyId: string, id: string) { return this.sanitize(await this.required(companyId, id)); }

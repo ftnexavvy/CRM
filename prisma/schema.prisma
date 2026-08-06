@@ -210,6 +210,7 @@ model Task {
   status       WorkflowStatus @default(PENDING)
   assignedToId String?
   createdById  String
+  startedAt    DateTime?
   completedAt  DateTime?
   publishedPlatforms String[] @default([])
   createdAt    DateTime       @default(now())

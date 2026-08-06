@@ -183,6 +183,17 @@
 
     <div class="form-grid">
       <div class="form-group">
+        <label for="eEmail">Work Email *</label>
+        <input type="email" id="eEmail" name="eEmail" [(ngModel)]="editEmail" required />
+      </div>
+      <div class="form-group">
+        <label for="ePhone">Phone Number</label>
+        <input type="tel" id="ePhone" name="ePhone" [(ngModel)]="editPhone" placeholder="+91 9876543210" />
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
         <label for="eDesignation">Designation</label>
         <input type="text" id="eDesignation" name="eDesignation" [(ngModel)]="editDesignation" />
       </div>

@@ -284,7 +284,12 @@
       <h4 class="mb-3">Social Media Management Configuration</h4>
 
       <div class="form-group mb-3">
-        <label>Platforms</label>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="mb-0">Platforms</label>
+          <button type="button" class="btn btn-sm btn-outline-primary" style="padding: 2px 10px; font-size: 0.8rem;" (click)="toggleSelectAllPlatforms()">
+            {{ areAllPlatformsSelected() ? '✓ Deselect All' : '☑️ Select All Platforms' }}
+          </button>
+        </div>
         <div class="d-flex flex-wrap gap-2">
           <label><input type="checkbox" [(ngModel)]="smmPlatforms.facebook" name="smm_fb"> Facebook</label>
           <label><input type="checkbox" [(ngModel)]="smmPlatforms.instagram" name="smm_ig"> Instagram</label>
@@ -462,7 +467,12 @@
       <h4 class="mb-3">Social Media Management Configuration</h4>
 
       <div class="form-group mb-3">
-        <label>Platforms</label>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="mb-0">Platforms</label>
+          <button type="button" class="btn btn-sm btn-outline-primary" style="padding: 2px 10px; font-size: 0.8rem;" (click)="toggleSelectAllPlatforms()">
+            {{ areAllPlatformsSelected() ? '✓ Deselect All' : '☑️ Select All Platforms' }}
+          </button>
+        </div>
         <div class="d-flex flex-wrap gap-2">
           <label><input type="checkbox" [(ngModel)]="smmPlatforms.facebook" name="smm_fb_imp"> Facebook</label>
           <label><input type="checkbox" [(ngModel)]="smmPlatforms.instagram" name="smm_ig_imp"> Instagram</label>

@@ -15,6 +15,24 @@ export class NotificationService {
     return notification;
   }
 
+  async notifyCompany(companyId: string, title: string, message: string, eventType?: string, data?: any) {
+    const payload = {
+      id: Math.random().toString(36).substring(2, 9),
+      companyId,
+      title,
+      message,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      eventType: eventType || 'general',
+      data
+    };
+    this.gateway.emitToCompany(companyId, 'new_notification', payload);
+    if (eventType) {
+      this.gateway.emitToCompany(companyId, eventType, payload);
+    }
+    return payload;
+  }
+
   async findAll(companyId: string, userId: string) {
     return this.repo.findMany(companyId, userId);
   }

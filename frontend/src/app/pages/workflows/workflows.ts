@@ -10,6 +10,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FormatEnumPipe } from '../../shared/pipes/format-enum.pipe';
 import { ModalComponent } from '../../shared/components/modal/modal';
+import { playNotificationSound } from '../../core/utils/audio.util';
 
 @Component({
   selector: 'app-workflows',
@@ -88,6 +89,38 @@ export class WorkflowsComponent implements OnInit {
 
   // Sidebar search
   workflowSearchQuery = '';
+
+  // Task Pagination per Service Section (Google-style pagination)
+  sectionPages = signal<Record<string, number>>({});
+  pageSize = 5;
+
+  getPaginatedTasks(section: any): any[] {
+    if (!section || !section.tasks) return [];
+    const page = this.sectionPages()[section.key] || 1;
+    const start = (page - 1) * this.pageSize;
+    return section.tasks.slice(start, start + this.pageSize);
+  }
+
+  getTotalPages(section: any): number {
+    if (!section || !section.tasks) return 1;
+    return Math.ceil(section.tasks.length / this.pageSize) || 1;
+  }
+
+  getPageNumbers(section: any): number[] {
+    const total = this.getTotalPages(section);
+    const pages: number[] = [];
+    for (let i = 1; i <= total; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setSectionPage(sectionKey: string, page: number): void {
+    const sec = this.serviceSections().find((s: any) => s.key === sectionKey);
+    const total = Math.ceil((sec?.tasks?.length || 0) / this.pageSize) || 1;
+    const safePage = Math.max(1, Math.min(page, total));
+    this.sectionPages.update(map => ({ ...map, [sectionKey]: safePage }));
+  }
 
   filteredWorkflows(): any[] {
     const q = this.workflowSearchQuery.trim().toLowerCase();
@@ -646,6 +679,9 @@ export class WorkflowsComponent implements OnInit {
             }
           }
           this.workflows.set(wfs);
+          if (wfs.length > 0 && (!this.selectedWorkflow() || !wfs.some((w: any) => w.id === this.selectedWorkflow()?.id))) {
+            this.selectWorkflow(wfs[0].id);
+          }
         }
         this.loadingWorkflows.set(false);
       },
@@ -660,6 +696,9 @@ export class WorkflowsComponent implements OnInit {
       next: (res) => {
         if (res.success && Array.isArray(res.data)) {
           this.workflows.set(res.data);
+          if (res.data.length > 0 && (!this.selectedWorkflow() || !res.data.some((w: any) => w.id === this.selectedWorkflow()?.id))) {
+            this.selectWorkflow(res.data[0].id);
+          }
         }
         this.loadingWorkflows.set(false);
       },
@@ -1121,6 +1160,9 @@ export class WorkflowsComponent implements OnInit {
 
     this.workflowService.updateTaskStatus(task.id, payload).subscribe({
       next: () => {
+        if (status === 'COMPLETED') {
+          playNotificationSound('ok');
+        }
         this.toast.success(status === 'COMPLETED' ? 'Task completed! Downstream tasks unlocked 🔓' : 'Task status updated');
         const wf = this.selectedWorkflow();
         if (wf) this.selectWorkflow(wf.id);
@@ -1130,6 +1172,36 @@ export class WorkflowsComponent implements OnInit {
         this.toast.error(err.error?.message || 'Failed to update task status');
       }
     });
+  }
+
+  getTaskCompletionDuration(task: any): string {
+    if (!task || (task.status !== 'COMPLETED' && !task.completedAt)) return '';
+    const startTimeStr = task.startedAt || task.createdAt;
+    if (!startTimeStr) return '';
+    const start = new Date(startTimeStr).getTime();
+    const end = task.completedAt ? new Date(task.completedAt).getTime() : new Date(task.updatedAt).getTime();
+    const diffMs = Math.max(0, end - start);
+
+    const diffSecs = Math.floor(diffMs / 1000);
+    if (diffSecs < 60) {
+      return `${Math.max(1, diffSecs)} sec${diffSecs !== 1 ? 's' : ''}`;
+    }
+
+    const diffMins = Math.floor(diffSecs / 60);
+    const remSecs = diffSecs % 60;
+    if (diffMins < 60) {
+      return remSecs > 0 ? `${diffMins} min ${remSecs} sec` : `${diffMins} min${diffMins !== 1 ? 's' : ''}`;
+    }
+
+    const diffHours = Math.floor(diffMins / 60);
+    const remMins = diffMins % 60;
+    if (diffHours < 24) {
+      return remMins > 0 ? `${diffHours} hr ${remMins} min` : `${diffHours} hr${diffHours !== 1 ? 's' : ''}`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    const remHours = diffHours % 24;
+    return remHours > 0 ? `${diffDays} day${diffDays !== 1 ? 's' : ''} ${remHours} hr` : `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
   }
 
   getEmployeeName(id: string | null | undefined): string {

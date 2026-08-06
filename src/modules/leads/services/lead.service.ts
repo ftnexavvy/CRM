@@ -23,6 +23,13 @@ export class LeadService {
       "lead_created",
       `Created Lead '${lead.name}' with status '${lead.status}'`
     );
+    await this.notificationService.notifyCompany(
+      companyId,
+      "🎯 New Lead Added",
+      `New lead '${lead.name}' has been added!`,
+      "lead_created",
+      lead
+    );
     return lead;
   }
 
