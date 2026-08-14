@@ -18,8 +18,10 @@ async function bootstrap() {
   // Serve static uploaded files
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-  // Global Prefix
-  app.setGlobalPrefix("api/v1");
+  // Global Prefix (excluding public integration routes like Justdial)
+  app.setGlobalPrefix("api/v1", {
+    exclude: ["api/integrations/(.*)"],
+  });
 
   // Enable CORS (Allow all local & mobile origins)
   app.enableCors({

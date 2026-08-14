@@ -23,6 +23,7 @@ const service_catalog_module_1 = require("./modules/services/service-catalog.mod
 const gateway_module_1 = require("./core/gateway/gateway.module");
 const announcement_module_1 = require("./modules/announcement/announcement.module");
 const invoices_module_1 = require("./modules/invoices/invoices.module");
+const justdial_module_1 = require("./modules/integrations/justdial/justdial.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -47,6 +48,7 @@ exports.AppModule = AppModule = __decorate([
             announcement_module_1.AnnouncementModule,
             invoices_module_1.InvoicesModule,
             gateway_module_1.GatewayModule,
+            justdial_module_1.JustdialModule,
         ],
     })
 ], AppModule);

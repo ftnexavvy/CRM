@@ -398,10 +398,12 @@ model Lead {
   intent       String?
   nextAction   String?
   aiRecommendation String?
+  externalLeadId String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
   @@index([companyId, status])
+  @@index([companyId, externalLeadId])
   @@map("leads")
 }
 

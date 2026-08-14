@@ -52,8 +52,10 @@ async function bootstrap() {
     app.use((0, helmet_1.default)({ contentSecurityPolicy: false }));
     // Serve static uploaded files
     app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-    // Global Prefix
-    app.setGlobalPrefix("api/v1");
+    // Global Prefix (excluding public integration routes like Justdial)
+    app.setGlobalPrefix("api/v1", {
+        exclude: ["api/integrations/(.*)"],
+    });
     // Enable CORS (Allow all local & mobile origins)
     app.enableCors({
         origin: (reqOrigin, callback) => {

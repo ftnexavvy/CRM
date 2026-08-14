@@ -15,6 +15,7 @@ import { GatewayModule } from "./core/gateway/gateway.module";
 
 import { AnnouncementModule } from "./modules/announcement/announcement.module";
 import { InvoicesModule } from "./modules/invoices/invoices.module";
+import { JustdialModule } from "./modules/integrations/justdial/justdial.module";
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { InvoicesModule } from "./modules/invoices/invoices.module";
     AnnouncementModule,
     InvoicesModule,
     GatewayModule,
+    JustdialModule,
   ],
 })
 export class AppModule {}
