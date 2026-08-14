@@ -2,3 +2,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 .env
+.baileys_auth_info/
+.baileys_auth_info/*
+.wwebjs_auth/
+uploads/

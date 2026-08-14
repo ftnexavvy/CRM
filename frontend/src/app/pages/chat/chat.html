@@ -1,84 +1,176 @@
-<div class="chat-container">
-  <!-- Left Side: Chat Info Card -->
-  <div class="chat-info-sidebar card">
+<div class="chat-container" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDropFile($event)">
+  <!-- Drag and Drop Overlay -->
+  @if (isDraggingFile()) {
+    <div class="drag-drop-overlay">
+      <div class="drag-drop-box">
+        <div class="drag-icon">📁</div>
+        <h3>Drop Document Here to Upload</h3>
+        <p>Supports Images, PDFs, Docs, Spreadsheets, Archives up to 25 MB</p>
+      </div>
+    </div>
+  }
+
+  <!-- Left Sidebar: Channels & Team Directory -->
+  <aside class="chat-sidebar card">
     <div class="sidebar-header">
-      <div class="live-status">
-        <span class="status-pulse"></span>
-        <span class="status-text">Company Chatroom</span>
+      <div class="company-badge">
+        <span class="company-icon">🏢</span>
+        <span class="company-title">{{ authService.currentUser()?.company?.companyName || 'Company' }}</span>
       </div>
     </div>
-    
-    <div class="sidebar-body">
-      <h3>Welcome to live collaboration!</h3>
-      <p>This is a shared space for all members of <strong>{{ authService.currentUser()?.company?.companyName }}</strong>.</p>
-      
-      <div class="info-metric mt-4">
-        <div class="metric-label">Logged in as</div>
-        <div class="metric-value">{{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</div>
-        <div class="metric-sub">{{ authService.currentUser()?.role }}</div>
-      </div>
 
-      <div class="chat-guidelines mt-4">
-        <h4>Guidelines</h4>
-        <ul>
-          <li>Discuss active workflows and updates</li>
-          <li>Collaborate in real-time</li>
-          <li>Keep interactions professional</li>
-        </ul>
+    <!-- Channels Section -->
+    <div class="sidebar-section">
+      <div class="section-title">CHANNELS</div>
+      <nav class="channel-list">
+        <button class="channel-item" [ngClass]="{ active: activeChannel() === 'general' }" (click)="activeChannel.set('general')">
+          <span class="hashtag">#</span>
+          <span class="channel-name">general-team-chat</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Team Directory Section -->
+    <div class="sidebar-section team-directory-section">
+      <div class="section-title-row">
+        <span class="section-title">TEAM DIRECTORY</span>
+        <span class="member-count-pill">{{ teamMembers().length }}</span>
+      </div>
+      <div class="team-list">
+        @for (user of teamMembers(); track user.id) {
+          <div class="team-member-item">
+            <div class="member-avatar">
+              {{ user.firstName?.charAt(0) }}{{ user.lastName?.charAt(0) || '' }}
+              <span class="online-indicator"></span>
+            </div>
+            <div class="member-info">
+              <div class="member-name">{{ user.firstName }} {{ user.lastName || '' }}</div>
+              <div class="member-role">{{ user.designation || user.role?.name || 'Team Member' }}</div>
+            </div>
+          </div>
+        }
       </div>
     </div>
-  </div>
 
-  <!-- Right Side: Chat Window -->
-  <div class="chat-window card">
+    <!-- Current User Footer Card -->
+    <div class="user-footer-card">
+      <div class="user-avatar">
+        {{ authService.currentUser()?.firstName?.charAt(0) }}{{ authService.currentUser()?.lastName?.charAt(0) || '' }}
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</div>
+        <div class="user-sub">{{ authService.currentUser()?.role?.name || authService.currentUser()?.role }}</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Area: Main Chat Window -->
+  <main class="chat-main card">
     <!-- Chat Header -->
-    <div class="chat-header">
-      <div class="chat-title-group">
-        <span class="chat-icon">💬</span>
+    <header class="chat-header">
+      <div class="chat-title-info">
+        <span class="channel-hash">#</span>
         <div>
-          <h2>General Channel</h2>
-          <p class="chat-subtitle">All members channel</p>
+          <h2>general-team-chat</h2>
+          <p class="channel-desc">Official company collaboration space for all members</p>
         </div>
       </div>
-    </div>
 
-    <!-- Messages Container -->
-    <div class="chat-messages-container" #scrollContainer>
+      <!-- Search Messages Input -->
+      <div class="chat-search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search messages, files, or team members..." />
+        @if (searchQuery) {
+          <button class="clear-search-icon" (click)="clearSearch()" title="Clear search">✖</button>
+        }
+      </div>
+    </header>
+
+    <!-- Search Results Banner -->
+    @if (searchQuery.trim()) {
+      <div class="search-results-banner">
+        <span>🔍 Showing <strong>{{ filteredMessages().length }}</strong> matching results for "{{ searchQuery }}"</span>
+        <button class="clear-search-btn" (click)="clearSearch()">Clear Filter ✖</button>
+      </div>
+    }
+
+    <!-- Messages Display Area -->
+    <div class="messages-viewport" #scrollContainer>
       @if (loading()) {
-        <div class="loader-container">
+        <div class="loading-state">
           <div class="spinner"></div>
           <p>Loading messages...</p>
         </div>
-      } @else if (messages().length === 0) {
-        <div class="empty-chat-state">
-          <div class="chat-empty-icon">👋</div>
-          <h3>No messages yet</h3>
-          <p>Be the first to say hello to the team!</p>
+      } @else if (filteredMessages().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">💬</div>
+          <h3>{{ searchQuery ? 'No matching search results' : 'No messages found' }}</h3>
+          <p>{{ searchQuery ? 'Try searching with a different term or clear the filter.' : 'Be the first to share an update or upload a document!' }}</p>
         </div>
       } @else {
         <div class="messages-list">
-          @for (msg of messages(); track msg.id) {
-            <div class="message-group" [ngClass]="{ 'my-message-group': isMyMessage(msg) }">
-              <!-- Sender Avatar for other members -->
+          @for (msg of filteredMessages(); track msg.id) {
+            <div class="message-row" [ngClass]="{ 'is-mine': isMyMessage(msg) }">
+              <!-- Sender Avatar -->
               @if (!isMyMessage(msg)) {
-                <div class="sender-avatar" title="{{ getSenderName(msg) }}">
-                  {{ msg.sender.firstName.charAt(0) }}{{ msg.sender.lastName?.charAt(0) || '' }}
+                <div class="message-avatar" title="{{ getSenderName(msg) }}">
+                  {{ msg.sender?.firstName?.charAt(0) }}{{ msg.sender?.lastName?.charAt(0) || '' }}
                 </div>
               }
 
-              <div class="message-content-wrapper">
-                <!-- Sender metadata -->
+              <div class="message-content-box">
+                <!-- Sender Info Header -->
                 @if (!isMyMessage(msg)) {
-                  <div class="sender-meta">
+                  <div class="sender-info-line">
                     <span class="sender-name">{{ getSenderName(msg) }}</span>
-                    <span class="sender-role-badge">{{ msg.sender.designation || 'Staff' }}</span>
+                    <span class="sender-role-tag">{{ msg.sender?.designation || 'Staff' }}</span>
                   </div>
                 }
 
-                <!-- Message bubble -->
-                <div class="message-bubble" [ngClass]="{ 'my-bubble': isMyMessage(msg) }">
-                  <p class="message-text">{{ msg.content }}</p>
-                  <span class="message-time">{{ msg.createdAt | date:'shortTime' }}</span>
+                <!-- Bubble Container -->
+                <div class="message-bubble" [ngClass]="{ 'bubble-mine': isMyMessage(msg) }">
+                  <!-- Text Message -->
+                  @if (msg.content) {
+                    <p class="message-text">{{ msg.content }}</p>
+                  }
+
+                  <!-- Document / File Attachment Preview -->
+                  @if (msg.fileUrl) {
+                    <div class="attachment-card">
+                      <!-- Image File Preview -->
+                      @if (isImageFile(msg.fileType, msg.fileName)) {
+                        <div class="image-attachment-wrapper">
+                          <a [href]="getFileUrl(msg.fileUrl)" target="_blank" title="Click to view full image">
+                            <img [src]="getFileUrl(msg.fileUrl)" [alt]="msg.fileName || 'Attachment'" class="attached-image" />
+                          </a>
+                          <div class="image-actions-bar">
+                            <a [href]="getFileUrl(msg.fileUrl)" target="_blank" class="img-action-btn">👁 View Full</a>
+                            <button class="img-action-btn download-action" (click)="downloadFile(msg.fileUrl, msg.fileName, $event)">⬇ Download</button>
+                          </div>
+                        </div>
+                      } @else {
+                        <!-- Document File Card -->
+                        <div class="document-attachment-box">
+                          <div class="doc-icon-badge">{{ getFileIcon(msg.fileType, msg.fileName) }}</div>
+                          <div class="doc-meta">
+                            <div class="doc-name" [title]="msg.fileName">{{ msg.fileName || 'Document' }}</div>
+                            <div class="doc-size">{{ formatFileSize(msg.fileSize) }}</div>
+                          </div>
+                          <div class="doc-actions-group">
+                            <a [href]="getFileUrl(msg.fileUrl)" target="_blank" class="doc-view-btn" title="Open in new tab">👁 Open</a>
+                            <button class="doc-download-btn" (click)="downloadFile(msg.fileUrl, msg.fileName, $event)" title="Download Document to device">
+                              ⬇ Download
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Timestamp -->
+                  <div class="message-timestamp">
+                    {{ msg.createdAt | date:'shortTime' }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -87,26 +179,52 @@
       }
     </div>
 
-    <!-- Message Input Bar -->
-    <div class="chat-input-bar">
+    <!-- Selected File Attachment Bar Preview -->
+    @if (selectedFile) {
+      <div class="selected-file-bar">
+        <div class="file-preview-info">
+          <span class="preview-icon">{{ getFileIcon(selectedFile.type, selectedFile.name) }}</span>
+          <div class="preview-details">
+            <span class="preview-name">{{ selectedFile.name }}</span>
+            <span class="preview-size">{{ formatFileSize(selectedFile.size) }}</span>
+          </div>
+        </div>
+        <button class="remove-file-btn" (click)="removeSelectedFile()" title="Remove file">✖</button>
+      </div>
+    }
+
+    <!-- Input Footer Bar -->
+    <footer class="chat-input-footer">
+      <!-- Hidden File Input -->
+      <input type="file" #fileInput (change)="onFileSelected($event)" style="display: none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.csv" />
+
       <form (ngSubmit)="send()" class="input-form">
+        <!-- Document Upload Trigger Button -->
+        <button type="button" class="btn-icon-action attach-btn" (click)="triggerFileInput()" title="Attach Document/File (Max 25MB)">
+          <span class="attach-icon">📎</span>
+        </button>
+
+        <!-- Text Input Field -->
         <textarea
           [(ngModel)]="newMessage"
           name="messageText"
-          placeholder="Type your message here... (Press Enter to send)"
+          placeholder="Type a message or drag & drop documents here... (Press Enter to send, Shift+Enter for new line)"
           rows="1"
-          (keydown.enter)="$event.preventDefault(); send()"
-          required
-          [disabled]="sending()"
+          (keydown)="onKeydown($event)"
+          [disabled]="sending() || fileUploading()"
         ></textarea>
-        <button type="submit" class="btn btn-primary send-btn" [disabled]="!newMessage.trim() || sending()">
-          @if (sending()) {
-            <span>...</span>
+
+        <!-- Send Button -->
+        <button type="submit" class="btn btn-primary send-btn" [disabled]="(!newMessage.trim() && !selectedFile) || sending() || fileUploading()">
+          @if (fileUploading()) {
+            <span>Uploading...</span>
+          } @else if (sending()) {
+            <span>Sending...</span>
           } @else {
-            <span class="send-icon">➤</span>
+            <span>Send ➤</span>
           }
         </button>
       </form>
-    </div>
-  </div>
+    </footer>
+  </main>
 </div>

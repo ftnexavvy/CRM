@@ -34,23 +34,42 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
-  findByEmail(email: string): Promise<AuthUser | null> {
-    return this.prisma.user.findUnique({ where: { email }, include: { company: true, role: { include: { permissions: { include: { permission: true } } } } } });
+  async findByEmail(email: string): Promise<AuthUser | null> {
+    if (!email || typeof email !== 'string') return null;
+    try {
+      return await this.prisma.user.findUnique({ where: { email }, include: { company: true, role: { include: { permissions: { include: { permission: true } } } } } });
+    } catch (error) {
+      return null;
+    }
   }
 
-  findById(id: string): Promise<AuthUser | null> {
-    return this.prisma.user.findUnique({ where: { id }, include: { company: true, role: { include: { permissions: { include: { permission: true } } } } } });
+  async findById(id: string): Promise<AuthUser | null> {
+    if (!id || typeof id !== 'string') return null;
+    try {
+      return await this.prisma.user.findUnique({ where: { id }, include: { company: true, role: { include: { permissions: { include: { permission: true } } } } } });
+    } catch (error) {
+      return null;
+    }
   }
 
   async updateRefreshToken(id: string, refreshToken: string | null): Promise<void> {
-    await this.prisma.user.update({ where: { id }, data: { refreshToken } });
+    if (!id) return;
+    try {
+      await this.prisma.user.update({ where: { id }, data: { refreshToken } });
+    } catch (error) {}
   }
 
   async updatePassword(id: string, password: string): Promise<void> {
-    await this.prisma.user.update({ where: { id }, data: { password, refreshToken: null } });
+    if (!id) return;
+    try {
+      await this.prisma.user.update({ where: { id }, data: { password, refreshToken: null } });
+    } catch (error) {}
   }
 
   async updateLastLogin(id: string): Promise<void> {
-    await this.prisma.user.update({ where: { id }, data: { lastLogin: new Date() } });
+    if (!id) return;
+    try {
+      await this.prisma.user.update({ where: { id }, data: { lastLogin: new Date() } });
+    } catch (error) {}
   }
 }

@@ -232,26 +232,26 @@
           
           <div class="priority-columns" style="display: flex; gap: 20px; padding: 15px;">
              <!-- POSTS -->
-             <div class="priority-col" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px;">
-               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--text-color);">📱 Static Posts / Carousels</div>
+             <div class="priority-col" style="flex: 1; background: var(--crm-card-bg); border: 1px solid var(--crm-border); border-radius: 8px; padding: 15px;">
+               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--crm-text-primary);">📱 Static Posts / Carousels</div>
                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Total:</span> <strong>{{ getCampaignMetrics().totalPosts }}</strong></div>
                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Completed:</span> <strong class="text-success">{{ getCampaignMetrics().completedPosts }}</strong></div>
                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Remaining:</span> <strong class="text-warning">{{ getCampaignMetrics().remainingPosts }}</strong></div>
              </div>
 
              <!-- REELS -->
-             <div class="priority-col" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px;">
-               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--text-color);">🎬 Reels & Videos</div>
+             <div class="priority-col" style="flex: 1; background: var(--crm-card-bg); border: 1px solid var(--crm-border); border-radius: 8px; padding: 15px;">
+               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--crm-text-primary);">🎬 Reels & Videos</div>
                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Total:</span> <strong>{{ getCampaignMetrics().totalReels }}</strong></div>
                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Completed:</span> <strong class="text-success">{{ getCampaignMetrics().completedReels }}</strong></div>
                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Remaining:</span> <strong class="text-warning">{{ getCampaignMetrics().remainingReels }}</strong></div>
              </div>
              
              <!-- PROGRESS -->
-             <div class="priority-col" style="flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: var(--text-color);">Overall Progress</div>
-               <div style="width: 100px; height: 100px; border-radius: 50%; display: flex; justify-content: center; align-items: center; position: relative;" [style.background]="'conic-gradient(var(--primary-color) ' + getCampaignMetrics().progressPercent + '%, var(--border-color) 0)'">
-                  <div style="width: 80px; height: 80px; background: var(--bg-color); border-radius: 50%; position: absolute; top: 10px; left: 10px;"></div>
+             <div class="priority-col" style="flex: 1; background: var(--crm-card-bg); border: 1px solid var(--crm-border); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+               <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: var(--crm-text-primary);">Overall Progress</div>
+               <div style="width: 100px; height: 100px; border-radius: 50%; display: flex; justify-content: center; align-items: center; position: relative;" [style.background]="'conic-gradient(var(--crm-primary) ' + getCampaignMetrics().progressPercent + '%, var(--crm-border) 0)'">
+                  <div style="width: 80px; height: 80px; background: var(--crm-panel-bg); border-radius: 50%; position: absolute; top: 10px; left: 10px;"></div>
                   <strong style="position: relative; z-index: 2; font-size: 1.2rem;">{{ getCampaignMetrics().progressPercent }}%</strong>
                </div>
              </div>
@@ -802,7 +802,7 @@
 
       <!-- Published Platforms (For Content tasks when completing) -->
       @if (selectedTask().type === 'CONTENT' && !selectedTask().isLocked && (selectedTask().status === 'APPROVED' || selectedTask().status === 'IN_PROGRESS' || selectedTask().status === 'COMPLETED')) {
-        <div class="task-platforms-section" style="margin-bottom: 20px; padding: 15px; background: var(--bg-color-alt, #f8fafc); border-radius: 8px;">
+        <div class="task-platforms-section" style="margin-bottom: 20px; padding: 15px; background: var(--crm-panel-bg); border: 1px solid var(--crm-border); border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <span class="task-label" style="font-weight: 600; margin-bottom: 0;">PUBLISHED PLATFORMS (SELECT WHERE POSTED)</span>
             <button type="button" class="btn btn-xs btn-outline" (click)="selectAllPlatforms()" style="padding: 3px 10px; font-size: 0.8rem; border-radius: 12px;">
@@ -811,7 +811,7 @@
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             @for (platform of AVAILABLE_PLATFORMS; track platform) {
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: white; border: 1px solid var(--border-color); border-radius: 20px; font-size: 0.9rem;">
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: var(--crm-card-bg); border: 1px solid var(--crm-border); border-radius: 20px; font-size: 0.9rem; color: var(--crm-text-primary);">
                 <input type="checkbox" [checked]="selectedPlatforms.includes(platform)" (change)="togglePlatform(platform)">
                 {{ platform }}
               </label>

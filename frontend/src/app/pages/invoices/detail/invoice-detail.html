@@ -1,0 +1,131 @@
+<div class="invoice-preview-wrapper">
+  @if (loading()) {
+    <div class="loading-state">Loading invoice details...</div>
+  } @else if (!invoice()) {
+    <div class="empty-state">
+      <h3>Invoice Not Found</h3>
+      <a routerLink="/invoices" class="btn btn-primary btn-sm">Return to Invoices</a>
+    </div>
+  } @else {
+    <!-- Top Action Header Bar (Hide when printing) -->
+    <div class="action-header print:hidden">
+      <div class="header-left">
+        <a routerLink="/invoices" class="btn-back" title="Back to Invoices">←</a>
+        <div>
+          <div class="header-title-row">
+            <h1 class="header-title">Invoice Details</h1>
+            <span class="status-badge status-{{ invoice()?.status }}">{{ invoice()?.status }}</span>
+          </div>
+          <p class="header-sub">Invoice #{{ invoice()?.invoiceNumber }} • Billed to {{ invoice()?.clientCompanyName }}</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        @if (invoice()?.status !== 'PAID') {
+          <button class="btn btn-pay" (click)="openPaymentModal()">💳 Record Payment</button>
+        }
+        <button class="btn btn-pdf" (click)="downloadPdf()">📥 Download PDF</button>
+        <button class="btn btn-secondary" (click)="printPage()">🖨 Print</button>
+        <button class="btn btn-secondary" (click)="sendEmail()">✉️ Email</button>
+        <button class="btn btn-secondary" (click)="sendReminder()">⏰ Reminder</button>
+        <button class="btn btn-whatsapp" (click)="openWhatsApp()">💬 WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- Live Embedded PDF Preview Stage (100% Identical to Downloaded PDF) -->
+    <div class="canvas-center-wrapper">
+      @if (pdfLoading()) {
+        <div class="pdf-loading-box">
+          <div class="spinner"></div>
+          <p style="margin-top: 12px; color: #94a3b8; font-weight: 600;">Generating Pixel-Perfect PDF Preview...</p>
+        </div>
+      } @else if (pdfUrl()) {
+        <div class="pdf-viewer-card">
+          <iframe [src]="pdfUrl()" class="pdf-iframe-viewer" title="Invoice PDF Document"></iframe>
+        </div>
+      }
+    </div>
+
+    <!-- Bottom Payment Log Section -->
+    <div class="bottom-payment-card print:hidden">
+      <div class="pay-card-header">
+        <h3>Payment Transactions Log</h3>
+        <div class="pay-summary-pills">
+          <span class="pill">Total: <strong>₹{{ invoice()?.totalAmount | number:'1.2-2' }}</strong></span>
+          <span class="pill pill-success">Paid: <strong>₹{{ totalPaidAmount() | number:'1.2-2' }}</strong></span>
+          <span class="pill pill-danger">Balance: <strong>₹{{ balanceDueAmount() | number:'1.2-2' }}</strong></span>
+        </div>
+      </div>
+
+      @if (!invoice()?.payments || invoice()?.payments?.length === 0) {
+        <div class="no-pay-text">No payment transactions recorded yet.</div>
+      } @else {
+        <table class="pay-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Mode</th>
+              <th>Amount (₹)</th>
+              <th>Reference / Transaction ID</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of invoice()?.payments; track p.id) {
+              <tr>
+                <td>{{ p.paymentDate | date:'mediumDate' }}</td>
+                <td><span class="mode-badge">{{ p.paymentMode }}</span></td>
+                <td class="bold-text text-success">₹{{ p.amount | number:'1.2-2' }}</td>
+                <td>{{ p.transactionId || 'N/A' }}</td>
+                <td>{{ p.notes || '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+</div>
+
+<!-- Payment Modal -->
+@if (showPaymentModal()) {
+  <div class="modal-backdrop" (click)="closePaymentModal()">
+    <div class="modal-card card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Record Payment - #{{ invoice()?.invoiceNumber }}</h3>
+        <button class="btn-close" (click)="closePaymentModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Payment Amount (₹)</label>
+          <input type="number" [(ngModel)]="paymentAmount" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label>Payment Mode</label>
+          <select [(ngModel)]="paymentMode" class="form-control">
+            <option value="UPI">UPI / GPay / PhonePe</option>
+            <option value="BANK_TRANSFER">Bank Transfer / NEFT / IMPS</option>
+            <option value="CASH">Cash</option>
+            <option value="CHEQUE">Cheque</option>
+            <option value="ONLINE">Online Card / Gateway</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Transaction / UTR Reference ID (Optional)</label>
+          <input type="text" [(ngModel)]="paymentTxnId" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label>Notes (Optional)</label>
+          <textarea [(ngModel)]="paymentNotes" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closePaymentModal()">Cancel</button>
+        <button class="btn btn-success" (click)="submitPayment()">Submit Payment</button>
+      </div>
+    </div>
+  </div>
+}

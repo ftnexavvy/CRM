@@ -318,13 +318,13 @@ export class WorkflowsComponent implements OnInit {
     if (!wf) return [];
 
     const platformDefs: Record<string, { name: string; color: string; icon: string }> = {
-      instagram: { name: 'Instagram', color: '#e1306c', icon: '📸' },
-      facebook: { name: 'Facebook', color: '#1877f2', icon: '📘' },
-      linkedin: { name: 'LinkedIn', color: '#0a66c2', icon: '💼' },
-      twitter: { name: 'Twitter / X', color: '#1da1f2', icon: '🐦' },
-      youtube: { name: 'YouTube', color: '#ff0000', icon: '▶️' },
-      pinterest: { name: 'Pinterest', color: '#e60023', icon: '📌' },
-      threads: { name: 'Threads', color: '#000000', icon: '🧵' }
+      instagram: { name: 'Instagram', color: 'rgba(148, 163, 184, 0.2)', icon: '📸' },
+      facebook: { name: 'Facebook', color: 'rgba(148, 163, 184, 0.2)', icon: '📘' },
+      linkedin: { name: 'LinkedIn', color: 'rgba(148, 163, 184, 0.2)', icon: '💼' },
+      twitter: { name: 'Twitter / X', color: 'rgba(148, 163, 184, 0.2)', icon: '🐦' },
+      youtube: { name: 'YouTube', color: 'rgba(148, 163, 184, 0.2)', icon: '▶️' },
+      pinterest: { name: 'Pinterest', color: 'rgba(148, 163, 184, 0.2)', icon: '📌' },
+      threads: { name: 'Threads', color: 'rgba(148, 163, 184, 0.2)', icon: '🧵' }
     };
 
     const targetPlatforms: Array<{ name: string; color: string; icon: string }> = [];

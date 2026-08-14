@@ -1,0 +1,162 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <a routerLink="/invoices" class="back-link">← Back to Invoices</a>
+      <h1 class="page-title" style="margin-top: 6px;">Create Tax Invoice</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" routerLink="/invoices">Cancel</button>
+      <button class="btn btn-primary" (click)="saveInvoice()" [disabled]="submitting()">
+        {{ submitting() ? 'Creating Invoice...' : 'Save & Issue Invoice' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="form-grid">
+    <!-- Left Section: Client Details -->
+    <div class="card form-card">
+      <h3 class="card-title">Client & Billing Details</h3>
+
+      <div class="form-group">
+        <label>Select Existing Client (Auto-fill)</label>
+        <select [(ngModel)]="selectedClientId" (change)="onClientSelect()" class="form-control">
+          <option value="">-- Choose Client --</option>
+          @for (c of clients(); track c.id) {
+            <option [value]="c.id">{{ c.name }} ({{ c.email }})</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label>Client / Business Name *</label>
+          <input type="text" [(ngModel)]="clientCompanyName" class="form-control" placeholder="e.g. Dixit Enterprises" required />
+        </div>
+        <div class="form-group flex-1">
+          <label>Client Email *</label>
+          <input type="email" [(ngModel)]="clientEmail" class="form-control" placeholder="client@example.com" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label>Phone Number</label>
+          <input type="text" [(ngModel)]="clientPhone" class="form-control" placeholder="+91 9574515936" />
+        </div>
+        <div class="form-group flex-1">
+          <label>GSTIN (Optional)</label>
+          <input type="text" [(ngModel)]="clientGstNumber" class="form-control" placeholder="24AAAAA0000A1Z5" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Billing Address</label>
+        <textarea [(ngModel)]="clientBillingAddress" class="form-control" rows="2" placeholder="Full billing address..."></textarea>
+      </div>
+    </div>
+
+    <!-- Right Section: Invoice Dates & Terms -->
+    <div class="card form-card">
+      <h3 class="card-title">Invoice Dates & Terms</h3>
+
+      <div class="form-group">
+        <label>Invoice Date *</label>
+        <input type="date" [(ngModel)]="invoiceDate" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Payment Due Date *</label>
+        <input type="date" [(ngModel)]="dueDate" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Notes / Payment Terms</label>
+        <textarea [(ngModel)]="notes" class="form-control" rows="3"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line Items Section -->
+  <div class="card items-card" style="margin-top: 20px;">
+    <div class="items-header">
+      <h3>Services & Items</h3>
+      <button class="btn btn-secondary btn-sm" (click)="addItem()">+ Add Service Item</button>
+    </div>
+
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width: 30px;">#</th>
+          <th style="width: 38%;">Service / Item Details</th>
+          <th style="width: 10%;">HSN Code</th>
+          <th style="width: 8%;">Qty</th>
+          <th style="width: 16%;">Price per Unit (₹)</th>
+          <th style="width: 10%;">GST %</th>
+          <th style="width: 15%; text-align: right;">Amount (₹)</th>
+          <th style="width: 30px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items; track $index; let idx = $index) {
+          <tr>
+            <td style="vertical-align: middle;">{{ idx + 1 }}</td>
+            <td>
+              @if (services().length > 0) {
+                <select class="form-control sm-input" (change)="onServiceSelect(idx, $any($event.target).value)" style="margin-bottom: 4px; font-weight: 600;">
+                  <option value="">-- Quick Select Service (Optional) --</option>
+                  @for (s of services(); track s.id) {
+                    <option [value]="s.id">{{ s.name }}</option>
+                  }
+                </select>
+              }
+              <input type="text" [(ngModel)]="item.serviceName" class="form-control" placeholder="Service Name (e.g. Website Development)" required />
+              <input type="text" [(ngModel)]="item.serviceDescription" class="form-control sm-input" placeholder="Service description / deliverables (optional)" style="margin-top: 4px;" />
+            </td>
+            <td>
+              <input type="text" [(ngModel)]="item.hsnCode" class="form-control text-center" placeholder="9983" />
+            </td>
+            <td>
+              <input type="number" [(ngModel)]="item.quantity" class="form-control text-center" min="1" />
+            </td>
+            <td>
+              <input type="number" [(ngModel)]="item.price" class="form-control bold-input" min="0" placeholder="0.00" required />
+            </td>
+            <td>
+              <select [(ngModel)]="item.gstPercentage" class="form-control text-center">
+                <option [ngValue]="0">0%</option>
+                <option [ngValue]="5">5%</option>
+                <option [ngValue]="12">12%</option>
+                <option [ngValue]="18">18%</option>
+                <option [ngValue]="28">28%</option>
+              </select>
+            </td>
+            <td style="text-align: right; font-weight: bold; vertical-align: middle; font-size: 1rem;">
+              ₹{{ calculateItemAmount(item) | number:'1.2-2' }}
+            </td>
+            <td style="text-align: center; vertical-align: middle;">
+              @if (items.length > 1) {
+                <button class="btn-icon-del" (click)="removeItem(idx)" title="Remove item">×</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Totals Summary -->
+    <div class="totals-summary-box">
+      <div class="summary-row">
+        <span>Subtotal:</span>
+        <strong>₹{{ calculateSubtotal() | number:'1.2-2' }}</strong>
+      </div>
+      <div class="summary-row">
+        <span>GST Total:</span>
+        <strong>₹{{ calculateGst() | number:'1.2-2' }}</strong>
+      </div>
+      <div class="summary-row total-row">
+        <span>Total Payable:</span>
+        <strong style="color: #2563eb; font-size: 1.3rem;">₹{{ calculateTotal() | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+  </div>
+</div>

@@ -14,6 +14,7 @@ import { ServiceCatalogModule } from "./modules/services/service-catalog.module"
 import { GatewayModule } from "./core/gateway/gateway.module";
 
 import { AnnouncementModule } from "./modules/announcement/announcement.module";
+import { InvoicesModule } from "./modules/invoices/invoices.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AnnouncementModule } from "./modules/announcement/announcement.module";
     NotificationModule,
     ServiceCatalogModule,
     AnnouncementModule,
+    InvoicesModule,
     GatewayModule,
   ],
 })

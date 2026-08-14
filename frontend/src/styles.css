@@ -1,31 +1,75 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --bg-primary: #090d16;
-  --bg-secondary: rgba(15, 23, 42, 0.75);
-  --bg-tertiary: rgba(30, 41, 59, 0.7);
-  --bg-card: rgba(15, 23, 42, 0.65);
+  /* ── CRM CENTRAL COLOR SYSTEM ── */
+  --crm-bg: #080D18;
+  --crm-page-bg: #0B1120;
+  --crm-panel-bg: #101827;
+  --crm-card-bg: #141E2E;
+  --crm-card-elevated: #182235;
+  --crm-input-bg: #111B2B;
+
+  --crm-border: rgba(148, 163, 184, 0.12);
+  --crm-border-hover: rgba(99, 102, 241, 0.35);
+
+  --crm-text-primary: #F8FAFC;
+  --crm-text-secondary: #CBD5E1;
+  --crm-text-muted: #94A3B8;
+  --crm-text-disabled: #64748B;
+
+  --crm-primary: #6366F1;
+  --crm-primary-hover: #818CF8;
+  --crm-primary-active: #4F46E5;
+  --crm-primary-soft: rgba(99, 102, 241, 0.12);
+  --crm-primary-glow: rgba(99, 102, 241, 0.18);
+
+  /* ── SEMANTIC STATUS TOKENS ── */
+  --crm-status-completed-bg: rgba(34, 197, 94, 0.10);
+  --crm-status-completed-text: #4ADE80;
+  --crm-status-completed-icon: #22C55E;
+
+  --crm-status-inprogress-bg: rgba(99, 102, 241, 0.10);
+  --crm-status-inprogress-text: #818CF8;
+  --crm-status-inprogress-icon: #6366F1;
+
+  --crm-status-pending-bg: rgba(245, 158, 11, 0.10);
+  --crm-status-pending-text: #FBBF24;
+  --crm-status-pending-icon: #F59E0B;
+
+  --crm-status-overdue-bg: rgba(239, 68, 68, 0.10);
+  --crm-status-overdue-text: #F87171;
+  --crm-status-overdue-icon: #EF4444;
+
+  --crm-status-locked-bg: rgba(100, 116, 139, 0.10);
+  --crm-status-locked-text: #94A3B8;
+  --crm-status-locked-icon: #64748B;
+
+  /* Standard Legacy Maps */
+  --bg-primary: var(--crm-bg);
+  --bg-secondary: var(--crm-panel-bg);
+  --bg-tertiary: var(--crm-card-bg);
+  --bg-card: var(--crm-card-bg);
   
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-color-hover: rgba(99, 102, 241, 0.35);
+  --border-color: var(--crm-border);
+  --border-color-hover: var(--crm-border-hover);
   --glass-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: var(--crm-text-primary);
+  --text-secondary: var(--crm-text-secondary);
+  --text-muted: var(--crm-text-muted);
 
-  --primary-color: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
-  --accent-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
-  --danger-gradient: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
-  --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --primary-color: var(--crm-primary);
+  --primary-hover: var(--crm-primary-hover);
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --success-gradient: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
 
-  --danger-color: #f43f5e;
-  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --success-color: #22c55e;
   --warning-color: #fbbf24;
-  --info-color: #38bdf8;
+  --info-color: #818cf8;
 
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
@@ -37,7 +81,7 @@
   --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.35);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.18);
 
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -50,14 +94,8 @@
 }
 
 body {
-  background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(56, 189, 248, 0.08) 0px, transparent 50%);
-  background-attachment: fixed;
-  color: var(--text-primary);
+  background-color: var(--crm-bg);
+  color: var(--crm-text-primary);
   font-family: var(--font-sans);
   min-height: 100vh;
   overflow-x: hidden;
@@ -77,25 +115,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--crm-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(148, 163, 184, 0.15);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(148, 163, 184, 0.3);
 }
 
 /* Inputs & Form Elements */
 input,
 select,
 textarea {
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
+  background-color: var(--crm-input-bg);
+  border: 1px solid var(--crm-border);
+  color: var(--crm-text-primary);
   border-radius: var(--radius-md);
   padding: 11px 16px;
   font-family: var(--font-sans);
@@ -103,27 +141,26 @@ textarea {
   width: 100%;
   outline: none;
   transition: all var(--transition-normal);
-  backdrop-filter: blur(8px);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25), 0 0 15px rgba(99, 102, 241, 0.2);
-  background-color: rgba(30, 41, 59, 0.9);
+  border-color: var(--crm-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+  background-color: var(--crm-input-bg);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--text-muted);
+  color: var(--crm-text-muted);
 }
 
 label {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--crm-text-secondary);
   margin-bottom: 6px;
 }
 
@@ -164,54 +201,58 @@ label {
 }
 
 .btn-primary {
-  background: var(--primary-gradient);
+  background-color: var(--crm-primary);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
-  border-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--crm-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+  border-color: transparent;
 }
 
 .btn-primary:active {
   transform: translateY(0);
+  background-color: var(--crm-primary-active);
 }
 
 .btn-secondary {
-  background-color: var(--bg-tertiary);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-  backdrop-filter: blur(8px);
+  background-color: var(--crm-card-elevated);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  color: var(--crm-text-secondary);
 }
 
 .btn-secondary:hover {
-  background-color: rgba(51, 65, 85, 0.8);
-  border-color: var(--border-color-hover);
+  background-color: #1e2a3e;
+  border-color: var(--crm-border-hover);
+  color: var(--crm-text-primary);
   transform: translateY(-1px);
 }
 
 .btn-danger {
-  background: var(--danger-gradient);
+  background-color: var(--danger-color);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.35);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
 }
 
 .btn-danger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(244, 63, 94, 0.5);
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35);
 }
 
 .btn-success {
-  background: var(--success-gradient);
+  background-color: var(--success-color);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25);
 }
 
 .btn-success:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  background-color: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.35);
 }
 
 .btn-icon {
@@ -221,19 +262,17 @@ label {
 
 /* Glass Cards & Containers */
 .card {
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-color);
+  background: var(--crm-card-bg);
+  border: 1px solid var(--crm-border);
   border-radius: var(--radius-lg);
   padding: 24px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
 }
 
 .card:hover {
-  border-color: var(--border-color-hover);
-  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.12);
+  border-color: var(--crm-border-hover);
+  box-shadow: var(--shadow-lg);
 }
 
 .card-title {
@@ -250,9 +289,8 @@ label {
 .table-container {
   overflow-x: auto;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
+  border: 1px solid var(--crm-border);
+  background: var(--crm-card-bg);
   box-shadow: var(--shadow-md);
 }
 
@@ -263,22 +301,21 @@ table {
 }
 
 th {
-  background-color: rgba(30, 41, 59, 0.85);
-  backdrop-filter: blur(8px);
-  color: var(--text-secondary);
+  background-color: var(--crm-panel-bg);
+  color: var(--crm-text-secondary);
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 15px 20px;
   font-weight: 700;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--crm-border);
 }
 
 td {
   padding: 16px 20px;
   font-size: 0.9rem;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
+  border-bottom: 1px solid var(--crm-border);
+  color: var(--crm-text-primary);
   vertical-align: middle;
 }
 
@@ -319,47 +356,54 @@ tr:hover td {
 .badge.active,
 .badge.approved,
 .badge.completed {
-  background-color: rgba(16, 185, 129, 0.15);
-  border-color: rgba(16, 185, 129, 0.3);
-  color: #34d399;
+  background-color: var(--crm-status-completed-bg);
+  border-color: rgba(34, 197, 94, 0.25);
+  color: var(--crm-status-completed-text);
 }
 
 .badge.inactive,
 .badge.cancelled {
-  background-color: rgba(244, 63, 94, 0.15);
-  border-color: rgba(244, 63, 94, 0.3);
-  color: #fb7185;
+  background-color: var(--crm-status-overdue-bg);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--crm-status-overdue-text);
 }
 
 .badge.suspended,
-.badge.in-progress {
-  background-color: rgba(251, 191, 36, 0.15);
-  border-color: rgba(251, 191, 36, 0.3);
-  color: #fcd34d;
+.badge.in-progress,
+.badge.in_progress {
+  background-color: var(--crm-status-inprogress-bg);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: var(--crm-status-inprogress-text);
 }
 
 .badge.pending {
-  background-color: rgba(148, 163, 184, 0.15);
-  border-color: rgba(148, 163, 184, 0.3);
-  color: #cbd5e1;
+  background-color: var(--crm-status-pending-bg);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--crm-status-pending-text);
 }
 
 .badge.assigned {
-  background-color: rgba(56, 189, 248, 0.15);
-  border-color: rgba(56, 189, 248, 0.3);
-  color: #38bdf8;
+  background-color: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
 }
 
 .badge.review {
-  background-color: rgba(168, 85, 247, 0.15);
-  border-color: rgba(168, 85, 247, 0.3);
-  color: #c084fc;
+  background-color: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #818cf8;
 }
 
 .badge.revision {
-  background-color: rgba(244, 114, 182, 0.15);
-  border-color: rgba(244, 114, 182, 0.3);
-  color: #f472b6;
+  background-color: var(--crm-status-pending-bg);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--crm-status-pending-text);
+}
+
+.badge.locked {
+  background-color: var(--crm-status-locked-bg);
+  border-color: rgba(100, 116, 139, 0.25);
+  color: var(--crm-status-locked-text);
 }
 
 /* Spinners & Loaders */
@@ -368,7 +412,7 @@ tr:hover td {
   height: 26px;
   border: 3px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  border-top-color: var(--primary-color);
+  border-top-color: var(--crm-primary);
   animation: spin 0.8s linear infinite;
 }
 

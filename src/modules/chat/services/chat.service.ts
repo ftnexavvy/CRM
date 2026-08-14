@@ -14,7 +14,7 @@ export class ChatService {
 
   async sendMessage(companyId: string, senderId: string, dto: SendMessageDto) {
     this.logger.log(`User '${senderId}' is sending a chat message in company '${companyId}'`);
-    const message = await this.chatRepo.createMessage(companyId, senderId, dto.content);
+    const message = await this.chatRepo.createMessage(companyId, senderId, dto);
     this.gateway.emitToCompany(companyId, 'new_message', message);
     return message;
   }

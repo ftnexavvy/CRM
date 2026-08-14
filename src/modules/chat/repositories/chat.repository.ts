@@ -5,12 +5,16 @@ import { PrismaService } from "../../../core/prisma/prisma.service";
 export class ChatRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createMessage(companyId: string, senderId: string, content: string) {
+  async createMessage(companyId: string, senderId: string, payload: { content?: string; fileUrl?: string; fileName?: string; fileType?: string; fileSize?: number }) {
     return this.prisma.chatMessage.create({
       data: {
         companyId,
         senderId,
-        content,
+        content: payload.content || "",
+        fileUrl: payload.fileUrl || null,
+        fileName: payload.fileName || null,
+        fileType: payload.fileType || null,
+        fileSize: payload.fileSize || null,
       },
       include: {
         sender: {

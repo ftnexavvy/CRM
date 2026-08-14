@@ -48,7 +48,9 @@ export class SettingsComponent implements OnInit {
     this.loading.set(true);
     this.catalogService.all().subscribe({
       next: (res) => {
-        if (res.success) this.services.set(res.data);
+        if (res.success) {
+          this.services.set(res.data);
+        }
         this.loading.set(false);
       },
       error: () => {
@@ -59,62 +61,133 @@ export class SettingsComponent implements OnInit {
   }
 
   loadDepartments(): void {
-    this.departmentService.all().subscribe(res => {
-      if (res.success && Array.isArray(res.data)) this.departments.set(res.data);
+    this.departmentService.all().subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.departments.set(res.data);
+        }
+      }
     });
   }
 
   loadEmployees(): void {
-    this.userService.all().subscribe(res => {
-      if (res.success && Array.isArray(res.data)) this.employees.set(res.data.filter((employee: any) => employee.status === 'ACTIVE'));
+    this.userService.all().subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.employees.set(res.data);
+        }
+      }
     });
   }
 
   loadWorkflowSettings(): void {
     this.catalogService.workflowSettings().subscribe({
-      next: (res) => {
-        if (res.success) {
+      next: (res: any) => {
+        if (res.success && res.data) {
           this.workflowSettings.set(res.data);
           this.assignmentStrategy = res.data.assignmentStrategy || 'LEAST_WORKLOAD';
         }
-      },
-      error: () => this.toast.error('Failed to load workflow settings')
+      }
     });
   }
 
-  openCreate(): void {
-    this.resetForm();
-    this.showCreateModal = true;
+  updateAssignmentStrategy(): void {
+    this.submitting.set(true);
+    this.catalogService.updateWorkflowSettings({ assignmentStrategy: this.assignmentStrategy }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.workflowSettings.set(res.data);
+          this.toast.success('Assignment strategy updated successfully');
+        }
+        this.submitting.set(false);
+      },
+      error: () => {
+        this.submitting.set(false);
+        this.toast.error('Failed to update assignment strategy');
+      }
+    });
   }
 
-  openEdit(svc: any): void {
-    this.editingService = svc;
-    this.formName = svc.name;
-    this.formDescription = svc.description || '';
-    this.formDepartmentId = svc.departmentId || '';
-    this.formOwnerId = svc.ownerId || '';
-    this.formTaskTemplates = Array.isArray(svc.taskTemplates) ? svc.taskTemplates.join('\n') : '';
-    this.showEditModal = true;
+  saveWorkflowSettings(): void {
+    this.updateAssignmentStrategy();
+  }
+
+  openCreate(): void {
+    this.openCreateModal();
+  }
+
+  openEdit(service: any): void {
+    this.openEditModal(service);
   }
 
   onCreateService(): void {
-    if (!this.formName.trim()) {
-      this.toast.warning('Service name is required');
+    this.createService();
+  }
+
+  onUpdateService(): void {
+    this.updateService();
+  }
+
+  getDepartmentName(deptId: string): string {
+    const d = this.departments().find((x: any) => x.id === deptId);
+    return d ? d.name : 'Unassigned';
+  }
+
+  getEmployeeName(empId: string): string {
+    const e = this.employees().find((x: any) => x.id === empId);
+    return e ? `${e.firstName || ''} ${e.lastName || ''}`.trim() : 'Unassigned';
+  }
+
+  openCreateModal(): void {
+    this.formName = '';
+    this.formDescription = '';
+    this.formDepartmentId = '';
+    this.formOwnerId = '';
+    this.formTaskTemplates = '';
+    this.showCreateModal = true;
+  }
+
+  openEditModal(service: any): void {
+    this.editingService = service;
+    this.formName = service.name;
+    this.formDescription = service.description || '';
+    this.formDepartmentId = service.departmentId || '';
+    this.formOwnerId = service.ownerId || '';
+
+    const templates = service.taskTemplates ? service.taskTemplates.map((t: any) => t.title).join('\n') : '';
+    this.formTaskTemplates = templates;
+    this.showEditModal = true;
+  }
+
+  createService(): void {
+    if (!this.formName || !this.formDepartmentId) {
+      this.toast.error('Name and Department are required');
       return;
     }
-    this.submitting.set(true);
-    this.catalogService.create({
-      name: this.formName.trim(),
-      description: this.formDescription || undefined,
-      departmentId: this.formDepartmentId || undefined,
+
+    const taskTemplates = this.formTaskTemplates
+      .split('\n')
+      .map(t => t.trim())
+      .filter(t => t.length > 0)
+      .map(title => ({ title }));
+
+    const payload = {
+      name: this.formName,
+      description: this.formDescription,
+      departmentId: this.formDepartmentId,
       ownerId: this.formOwnerId || undefined,
-      taskTemplates: this.templateLines(),
-    }).subscribe({
-      next: () => {
-        this.toast.success('Service created!');
-        this.showCreateModal = false;
+      taskTemplates
+    };
+
+    this.submitting.set(true);
+    this.catalogService.create(payload).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.toast.success('Service created successfully');
+          this.showCreateModal = false;
+          this.loadServices();
+        }
         this.submitting.set(false);
-        this.loadServices();
       },
       error: (err) => {
         this.submitting.set(false);
@@ -123,24 +196,33 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  onUpdateService(): void {
-    if (!this.formName.trim()) {
-      this.toast.warning('Service name is required');
-      return;
-    }
-    this.submitting.set(true);
-    this.catalogService.update(this.editingService.id, {
-      name: this.formName.trim(),
-      description: this.formDescription || undefined,
-      departmentId: this.formDepartmentId || undefined,
+  updateService(): void {
+    if (!this.editingService) return;
+
+    const taskTemplates = this.formTaskTemplates
+      .split('\n')
+      .map(t => t.trim())
+      .filter(t => t.length > 0)
+      .map(title => ({ title }));
+
+    const payload = {
+      name: this.formName,
+      description: this.formDescription,
+      departmentId: this.formDepartmentId,
       ownerId: this.formOwnerId || undefined,
-      taskTemplates: this.templateLines(),
-    }).subscribe({
-      next: () => {
-        this.toast.success('Service updated!');
-        this.showEditModal = false;
+      taskTemplates
+    };
+
+    this.submitting.set(true);
+    this.catalogService.update(this.editingService.id, payload).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.toast.success('Service updated successfully');
+          this.showEditModal = false;
+          this.editingService = null;
+          this.loadServices();
+        }
         this.submitting.set(false);
-        this.loadServices();
       },
       error: (err) => {
         this.submitting.set(false);
@@ -149,56 +231,20 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  deleteService(id: string): void {
-    if (!confirm('Delete this service? Client links will be removed.')) return;
+  deleteService(serviceId: any): void {
+    const id = typeof serviceId === 'string' ? serviceId : serviceId?.id;
+    if (!confirm('Are you sure you want to delete this service?')) return;
+
     this.catalogService.delete(id).subscribe({
-      next: () => {
-        this.toast.success('Service deleted');
-        this.loadServices();
-      },
-      error: (err) => this.toast.error(err.error?.message || 'Failed to delete service')
-    });
-  }
-
-  resetForm(): void {
-    this.formName = '';
-    this.formDescription = '';
-    this.formDepartmentId = '';
-    this.formOwnerId = '';
-    this.formTaskTemplates = '';
-    this.editingService = null;
-  }
-
-  saveWorkflowSettings(): void {
-    this.submitting.set(true);
-    this.catalogService.updateWorkflowSettings({ assignmentStrategy: this.assignmentStrategy }).subscribe({
       next: (res) => {
-        if (res.success) this.workflowSettings.set(res.data);
-        this.submitting.set(false);
-        this.toast.success('Workflow automation settings saved');
+        if (res.success) {
+          this.toast.success('Service deleted successfully');
+          this.loadServices();
+        }
       },
       error: (err) => {
-        this.submitting.set(false);
-        this.toast.error(err.error?.message || 'Failed to save workflow settings');
+        this.toast.error(err.error?.message || 'Failed to delete service');
       }
     });
-  }
-
-  getDepartmentName(id: string | null): string {
-    if (!id) return 'No department';
-    return this.departments().find(dept => dept.id === id)?.name || 'Unknown department';
-  }
-
-  getEmployeeName(id: string | null): string {
-    if (!id) return 'No fallback owner';
-    const employee = this.employees().find(emp => emp.id === id);
-    return employee ? `${employee.firstName} ${employee.lastName || ''}`.trim() : 'Unknown employee';
-  }
-
-  private templateLines(): string[] {
-    return this.formTaskTemplates
-      .split('\n')
-      .map(line => line.trim())
-      .filter(Boolean);
   }
 }

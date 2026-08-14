@@ -12,6 +12,9 @@ import { LeadsComponent } from './pages/leads/leads';
 import { ClientsComponent } from './pages/clients/clients';
 import { SettingsComponent } from './pages/settings/settings';
 import { PostsComponent } from './pages/posts/posts';
+import { InvoicesComponent } from './pages/invoices/invoices';
+import { InvoiceCreateComponent } from './pages/invoices/create/invoice-create';
+import { InvoiceDetailComponent } from './pages/invoices/detail/invoice-detail';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -30,6 +33,9 @@ export const routes: Routes = [
       { path: 'chat', component: ChatComponent },
       { path: 'leads', component: LeadsComponent },
       { path: 'clients', component: ClientsComponent },
+      { path: 'invoices', component: InvoicesComponent },
+      { path: 'invoices/create', component: InvoiceCreateComponent },
+      { path: 'invoices/:id', component: InvoiceDetailComponent },
       { path: 'settings', component: SettingsComponent },
       { path: 'posts', component: PostsComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }

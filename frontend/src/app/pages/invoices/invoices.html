@@ -1,0 +1,158 @@
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">📄 Invoices & Payments</h1>
+      <p class="page-subtitle">Manage GST tax invoices, track payment status, and send automated reminders</p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/invoices/create" class="btn btn-primary">
+        <span>+</span> Create New Invoice
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon paid-icon">₹</div>
+      <div>
+        <div class="stat-label">Total Revenue Collected</div>
+        <div class="stat-value">₹{{ totalRevenue() | number:'1.2-2' }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending-icon">⏰</div>
+      <div>
+        <div class="stat-label">Pending / Unpaid Amount</div>
+        <div class="stat-value text-warning">₹{{ pendingRevenue() | number:'1.2-2' }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon count-icon">📑</div>
+      <div>
+        <div class="stat-label">Total Invoices</div>
+        <div class="stat-value">{{ invoices().length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar & Tabs -->
+  <div class="filter-card">
+    <div class="tabs-container">
+      <button class="tab-btn" [class.active]="activeTab() === 'ALL'" (click)="setTab('ALL')">All Invoices</button>
+      <button class="tab-btn" [class.active]="activeTab() === 'SENT'" (click)="setTab('SENT')">Sent / Pending</button>
+      <button class="tab-btn" [class.active]="activeTab() === 'PAID'" (click)="setTab('PAID')">Paid</button>
+      <button class="tab-btn" [class.active]="activeTab() === 'DRAFT'" (click)="setTab('DRAFT')">Drafts</button>
+      <button class="tab-btn" [class.active]="activeTab() === 'OVERDUE'" (click)="setTab('OVERDUE')">Overdue</button>
+    </div>
+
+    <div class="search-box">
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search by invoice # or client name..." class="search-input" />
+    </div>
+  </div>
+
+  <!-- Invoices Table -->
+  <div class="table-card card">
+    @if (loading()) {
+      <div class="loading-state">Loading invoices...</div>
+    } @else if (filteredInvoices().length === 0) {
+      <div class="empty-state">
+        <span style="font-size: 2.5rem;">📄</span>
+        <h3>No invoices found</h3>
+        <p>Create your first GST invoice to manage client billing seamlessly.</p>
+        <a routerLink="/invoices/create" class="btn btn-primary btn-sm" style="margin-top: 12px;">+ Create Invoice</a>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Client Name</th>
+            <th>Date</th>
+            <th>Due Date</th>
+            <th class="text-right">Total Amount</th>
+            <th class="text-center">Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (inv of filteredInvoices(); track inv.id) {
+            <tr class="table-row">
+              <td class="bold-text">
+                <a [routerLink]="['/invoices', inv.id]" class="invoice-link"># {{ inv.invoiceNumber }}</a>
+              </td>
+              <td>
+                <div class="client-name">{{ inv.clientCompanyName }}</div>
+                <div class="client-subtext">{{ inv.clientEmail }}</div>
+              </td>
+              <td>{{ inv.invoiceDate | date:'mediumDate' }}</td>
+              <td>{{ inv.dueDate | date:'mediumDate' }}</td>
+              <td class="text-right bold-text">₹{{ inv.totalAmount | number:'1.2-2' }}</td>
+              <td class="text-center">
+                <span class="status-badge status-{{ inv.status }}">{{ inv.status }}</span>
+              </td>
+              <td class="text-right action-cell">
+                <button class="action-btn" (click)="downloadPdf(inv, $event)" title="Download PDF">📥</button>
+                <button class="action-btn" (click)="sendEmail(inv, $event)" title="Send Email PDF">✉️</button>
+                <button class="action-btn" (click)="sendReminder(inv, $event)" title="Send Email Reminder">⏰</button>
+                <button class="action-btn whatsapp-btn" (click)="openWhatsApp(inv, $event)" title="Send WhatsApp Reminder">💬</button>
+                @if (inv.status !== 'PAID') {
+                  <button class="btn btn-success btn-xs" (click)="openPaymentModal(inv, $event)">+ Pay</button>
+                }
+                <button class="action-btn text-danger" (click)="deleteInvoice(inv, $event)" title="Delete">🗑</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- Record Payment Modal -->
+@if (showPaymentModal()) {
+  <div class="modal-backdrop" (click)="closePaymentModal()">
+    <div class="modal-card card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Record Payment - #{{ selectedInvoice()?.invoiceNumber }}</h3>
+        <button class="btn-close" (click)="closePaymentModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 15px;">
+          Recording payment for <strong>{{ selectedInvoice()?.clientCompanyName }}</strong>. Total Invoice Amount: <strong>₹{{ selectedInvoice()?.totalAmount | number:'1.2-2' }}</strong>.
+        </p>
+
+        <div class="form-group">
+          <label>Payment Amount (₹)</label>
+          <input type="number" [(ngModel)]="paymentAmount" class="form-control" placeholder="Enter amount paid" />
+        </div>
+
+        <div class="form-group">
+          <label>Payment Mode</label>
+          <select [(ngModel)]="paymentMode" class="form-control">
+            <option value="UPI">UPI / GPay / PhonePe</option>
+            <option value="BANK_TRANSFER">Bank Transfer / NEFT / IMPS</option>
+            <option value="CASH">Cash</option>
+            <option value="CHEQUE">Cheque</option>
+            <option value="ONLINE">Online Card / Gateway</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Transaction / UTR Reference ID (Optional)</label>
+          <input type="text" [(ngModel)]="paymentTxnId" class="form-control" placeholder="e.g. UTR12345678" />
+        </div>
+
+        <div class="form-group">
+          <label>Notes (Optional)</label>
+          <textarea [(ngModel)]="paymentNotes" class="form-control" rows="2" placeholder="Payment notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closePaymentModal()">Cancel</button>
+        <button class="btn btn-success" (click)="submitPayment()">Record Payment</button>
+      </div>
+    </div>
+  </div>
+}
